@@ -35,3 +35,4 @@ pip install -r requirements.txt
 ## 协作者
 
 - @sunsun3662
+- @samar2334
