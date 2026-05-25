@@ -1,5 +1,22 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+
+
+class CustomUserManager(BaseUserManager):
+    """自定义用户管理器"""
+
+    def create_user(self, account, password=None, **extra_fields):
+        if not account:
+            raise ValueError('必须提供账号')
+        user = self.model(account=account, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, account, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        return self.create_user(account, password, **extra_fields)
 
 
 class User(AbstractUser):
@@ -19,6 +36,8 @@ class User(AbstractUser):
     login_attempts = models.IntegerField('登录失败次数', default=0)
     lockout_until = models.DateTimeField('锁定截止时间', null=True, blank=True)
     created_at = models.DateTimeField('创建时间', auto_now_add=True)
+
+    objects = CustomUserManager()
 
     USERNAME_FIELD = 'account'
     REQUIRED_FIELDS = ['name', 'role', 'student_or_staff_no']
