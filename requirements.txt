@@ -1,3 +1,14 @@
-# Add your project dependencies here
-# requests>=2.28.0
-# flask>=2.0.0
+# Core framework
+Django>=4.2,<5.0
+
+# REST API
+djangorestframework>=3.14
+
+# CORS support (cross-origin requests)
+django-cors-headers>=4.0
+
+# Image handling for repair photos
+Pillow>=10.0
+
+# Excel export for statistics reports
+openpyxl>=3.1
