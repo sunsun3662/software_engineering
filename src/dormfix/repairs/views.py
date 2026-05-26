@@ -1,29 +1,19 @@
 from django.utils import timezone
-from rest_framework import status, generics
+from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import WorkOrder, WorkOrderLog
-from .serializers import WorkOrderListSerializer, WorkOrderDetailSerializer, WorkOrderCreateSerializer
-
-
-# 状态流转规则
-VALID_TRANSITIONS = {
-    'pending_review': ['pending_dispatch', 'rejected', 'cancelled'],
-    'pending_dispatch': ['assigned'],
-    'assigned': ['in_progress'],
-    'in_progress': ['pending_confirm'],
-    'pending_confirm': ['completed', 'in_progress'],
-    'completed': ['evaluated'],
-}
+from .models import WorkOrder, WorkOrderLog, WorkOrderImage
+from .serializers import WorkOrderListSerializer, WorkOrderDetailSerializer
 
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def order_list_create_view(request):
     """
-    GET: 获取工单列表
+    GET: 获取工单列表 (UC003)
     POST: 创建报修 (UC002)
     """
     if request.method == 'GET':
@@ -42,9 +32,12 @@ def order_list_create_view(request):
             orders = orders.filter(category=category_filter)
 
         # 分页
-        from rest_framework.pagination import PageNumberPagination
         paginator = PageNumberPagination()
-        paginator.page_size = 10
+        page_size = request.query_params.get('page_size')
+        if page_size:
+            paginator.page_size = int(page_size)
+        else:
+            paginator.page_size = 10
         result_page = paginator.paginate_queryset(orders, request)
         serializer = WorkOrderListSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
@@ -59,13 +52,58 @@ def order_list_create_view(request):
         status__in=['pending_review', 'pending_dispatch', 'assigned', 'in_progress', 'pending_confirm']
     ).count()
     if pending_count >= 3:
-        return Response({'error': '您当前有多个工单正在处理中，暂不能提交新报修'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': '您当前有多个工单正在处理中，暂不能提交新报修'}, status=status.HTTP_403_FORBIDDEN)
 
-    serializer = WorkOrderCreateSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    order = serializer.save(student=request.user)
+    # 获取参数
+    room_id = request.data.get('room')
+    category = request.data.get('category')
+    description = request.data.get('description')
+    urgency_level = request.data.get('urgency_level', 'normal')
 
-    return Response(WorkOrderDetailSerializer(order).data, status=status.HTTP_201_CREATED)
+    if not room_id or not category or not description:
+        errors = {}
+        if not room_id:
+            errors['room'] = ['此字段不能为空']
+        if not category:
+            errors['category'] = ['此字段不能为空']
+        if not description:
+            errors['description'] = ['此字段不能为空']
+        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # 验证房间存在
+    from accounts.models import DormRoom
+    try:
+        room = DormRoom.objects.get(id=room_id)
+    except DormRoom.DoesNotExist:
+        return Response({'room': ['房间不存在']}, status=status.HTTP_400_BAD_REQUEST)
+
+    # 创建工单
+    order = WorkOrder.objects.create(
+        student=request.user,
+        room=room,
+        category=category,
+        description=description,
+        urgency_level=urgency_level
+    )
+
+    # 处理多图片上传
+    images = request.FILES.getlist('images')
+    if len(images) > 3:
+        return Response({'images': ['最多上传3张图片']}, status=status.HTTP_400_BAD_REQUEST)
+    for img in images:
+        if img.size > 5 * 1024 * 1024:  # 5MB
+            return Response({'images': ['图片大小不能超过5MB']}, status=status.HTTP_400_BAD_REQUEST)
+        WorkOrderImage.objects.create(work_order=order, image=img)
+
+    # 记录日志
+    WorkOrderLog.objects.create(
+        work_order=order,
+        operator=request.user,
+        to_status='pending_review',
+        operation_type='提交报修'
+    )
+
+    return Response(WorkOrderDetailSerializer(order, context={'request': request}).data, status=status.HTTP_201_CREATED)
 
 
 @api_view(['GET'])
@@ -81,7 +119,7 @@ def order_detail_view(request, pk):
     if request.user.is_student and order.student != request.user:
         return Response({'error': '无权查看'}, status=status.HTTP_403_FORBIDDEN)
 
-    serializer = WorkOrderDetailSerializer(order)
+    serializer = WorkOrderDetailSerializer(order, context={'request': request})
     return Response(serializer.data)
 
 
