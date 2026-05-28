@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}工单进度与详情{% endblock %}
+
+{% block page_header %}工单详情{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- 左侧：工单核心信息 -->
+    <div class="col-lg-8">
+        <div class="glass-card p-4 border-0 shadow-sm mb-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+                <div>
+                    <h5 class="fw-bold m-0 text-slate-800" id="orderCategoryTitle">水电报修</h5>
+                    <small class="text-muted" id="orderNoText">工单号: WX17166432001234</small>
+                </div>
+                <span class="badge rounded-pill px-3 py-2 fw-semibold" id="statusBadge">加载中</span>
+            </div>
+
+            <!-- 位置与提交人信息 -->
+            <div class="row g-3 mb-4 bg-light p-3 rounded-3">
+                <div class="col-md-6">
+                    <span class="text-muted small d-block">报修人</span>
+                    <strong class="text-slate-800" id="studentInfo">张三 (13800138000)</strong>
+                </div>
+                <div class="col-md-6">
+                    <span class="text-muted small d-block">宿舍位置</span>
+                    <strong class="text-slate-800" id="roomInfo">1号楼 101 室</strong>
+                </div>
+            </div>
+
+            <!-- 详细描述 -->
+            <div class="mb-4">
+                <span class="text-muted small d-block mb-1">故障详情描述</span>
+                <p class="text-slate-700 bg-light p-3 rounded-3" id="descriptionText" style="white-space: pre-wrap; font-size: 0.95rem;">
+                    加载中...
+                </p>
+            </div>
+
+            <!-- 照片附件 -->
+            <div class="mb-4 d-none" id="imageAttachmentArea">
+                <span class="text-muted small d-block mb-2">现场照片</span>
+                <div class="d-flex gap-3 flex-wrap" id="imageContainer">
+                    <!-- 动态渲染图片 -->
+                </div>
+            </div>
+
+            <!-- 维修师傅信息 -->
+            <div class="mb-4 d-none" id="maintainerArea">
+                <span class="text-muted small d-block mb-1">接单维修人员</span>
+                <div class="d-flex align-items-center gap-3 p-3 rounded-3 bg-light">
+                    <div class="rounded-circle bg-primary-light text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 44px; height: 44px;" id="maintainerAvatarChar">
+                        师
+                    </div>
+                    <div>
+                        <strong class="d-block text-slate-800" id="maintainerName">王五师傅</strong>
+                        <span class="text-muted small" id="maintainerPhone"><i class="bi bi-telephone-fill me-1"></i>13700137000</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 页面动作区域 -->
+            <div class="d-flex gap-3 flex-wrap mt-5 border-top pt-4 justify-content-end" id="actionArea">
+                <!-- 由 JS 根据状态渲染按钮 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧：流转时间线 -->
+    <div class="col-lg-4">
+        <div class="glass-card p-4 border-0 shadow-sm">
+            <h6 class="fw-bold mb-4 text-slate-800"><i class="bi bi-clock-history me-2 text-primary"></i>工单流转日志</h6>
+            
+            <div class="timeline" id="timelineContainer">
+                <div class="text-center py-4 text-muted">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div> 读取日志中...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 申请返修模态对话框 -->
+<div class="modal fade" id="reworkModal" tabindex="-1" aria-labelledby="reworkModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger" id="reworkModalLabel"><i class="bi bi-arrow-counterclockwise me-2"></i>申请工单返修</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="reworkModal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="mb-3">
+                    <label for="reworkReason" class="form-label fw-medium text-slate-700">请写明返修原因</label>
+                    <textarea class="form-control" id="reworkReason" rows="3" placeholder="例如：水龙头仍然有微小渗水现象，烦请师傅重新处理。" required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger rounded-3" id="submitReworkBtn">提交返修申请</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 从路由路径中匹配工单 ID
+    const urlParts = window.location.pathname.split('/');
+    const orderId = urlParts[urlParts.length - 2]; // 路径格式如: /student/orders/{id}/
+    
+    let reworkModalInstance = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        reworkModalInstance = new bootstrap.Modal(document.getElementById('reworkModal'));
+        loadOrderDetail();
+
+        // 绑定申请返修提交按钮
+        document.getElementById('submitReworkBtn').addEventListener('click', submitRework);
+    });
+
+    // 1. 获取工单详情及状态日志
+    async function loadOrderDetail() {
+        showLoader();
+        try {
+            // 调用 API 2.3：获取工单详情
+            const order = await api.get(`/repairs/${orderId}/`);
+            
+            // 渲染元数据
+            document.getElementById('orderCategoryTitle').textContent = `${order.category_display}报修`;
+            document.getElementById('orderNoText').textContent = `工单号: ${order.order_no}`;
+            document.getElementById('studentInfo').textContent = `${order.student.name} (${order.student.phone || '无电话'})`;
+            document.getElementById('roomInfo').textContent = `${order.room.building_name} ${order.room.room_no} 室`;
+            document.getElementById('descriptionText').textContent = order.description;
+
+            // 渲染图片
+            const imageArea = document.getElementById('imageAttachmentArea');
+            const imgContainer = document.getElementById('imageContainer');
+            if (order.image_urls && order.image_urls.length > 0) {
+                imageArea.classList.remove('d-none');
+                imgContainer.innerHTML = order.image_urls.map(url => `
+                    <a href="${url}" target="_blank" class="shadow-sm rounded-3 overflow-hidden d-block" style="width: 100px; height: 100px; border: 1px solid var(--border-color);">
+                        <img src="${url}" alt="现场图" style="width: 100%; height: 100%; object-fit: cover;">
+                    </a>
+                `).join('');
+            } else {
+                imageArea.classList.add('d-none');
+            }
+
+            // 渲染维修工信息
+            const maintainerArea = document.getElementById('maintainerArea');
+            if (order.maintainer) {
+                maintainerArea.classList.remove('d-none');
+                document.getElementById('maintainerName').textContent = `${order.maintainer.name} 师傅`;
+                document.getElementById('maintainerPhone').innerHTML = `<i class="bi bi-telephone-fill me-1"></i>${order.maintainer.phone || '未提供'}`;
+                document.getElementById('maintainerAvatarChar').textContent = order.maintainer.name.charAt(0);
+            } else {
+                maintainerArea.classList.add('d-none');
+            }
+
+            // 渲染状态标牌
+            const badge = STATUS_MAP[order.status] || { text: order.status_display, class: 'bg-secondary' };
+            const statusBadge = document.getElementById('statusBadge');
+            statusBadge.textContent = badge.text;
+            statusBadge.className = `badge rounded-pill px-3 py-2 fw-semibold ${badge.class}`;
+
+            // 渲染动作按钮
+            renderActions(order.status);
+
+            // 渲染时间线
+            renderTimeline(order.logs, order.status);
+
+        } catch (e) {
+            showToast('获取工单详情失败', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+
+    // 根据工单当前状态渲染动作按钮
+    function renderActions(status) {
+        const container = document.getElementById('actionArea');
+        let html = '';
+
+        if (status === 'pending_review') {
+            // 待审核可以撤销
+            html = `
+                <button class="btn btn-outline-danger px-4 py-2 rounded-3" onclick="cancelOrder()">
+                    <i class="bi bi-trash-fill me-2"></i>撤销工单
+                </button>
+            `;
+        } else if (status === 'pending_confirm') {
+            // 待确认可以确认或返修
+            html = `
+                <button class="btn btn-outline-danger px-4 py-2 rounded-3" onclick="openReworkModal()">
+                    <i class="bi bi-arrow-counterclockwise me-2"></i>申请返修
+                </button>
+                <button class="btn btn-success px-4 py-2 rounded-3 glow-btn" onclick="confirmComplete()">
+                    <i class="bi bi-check-circle-fill me-2"></i>确认完工
+                </button>
+            `;
+        } else if (status === 'completed') {
+            // 已完成可以去评价和投诉
+            html = `
+                <a href="/student/complaint/${orderId}/" class="btn btn-outline-secondary px-4 py-2 rounded-3">
+                    <i class="bi bi-chat-square-quote me-2"></i>提交投诉
+                </a>
+                <a href="/student/evaluate/${orderId}/" class="btn btn-primary px-4 py-2 rounded-3 glow-btn">
+                    <i class="bi bi-star-fill me-2"></i>去评价服务
+                </a>
+            `;
+        } else if (status === 'evaluated') {
+            // 已评价可以去投诉
+            html = `
+                <a href="/student/complaint/${orderId}/" class="btn btn-outline-secondary px-4 py-2 rounded-3">
+                    <i class="bi bi-chat-square-quote me-2"></i>提交投诉
+                </a>
+            `;
+        }
+
+        container.innerHTML = html;
+    }
+
+    // 渲染工单流转日志时间轴
+    function renderTimeline(logs, currentStatus) {
+        const container = document.getElementById('timelineContainer');
+        if (!logs || logs.length === 0) {
+            container.innerHTML = `<div class="text-center text-muted small py-3">暂无流转日志记录</div>`;
+            return;
+        }
+
+        let html = '';
+        logs.forEach((log, index) => {
+            const isLast = index === logs.length - 1;
+            const logClass = isLast && currentStatus !== 'cancelled' && currentStatus !== 'rejected' 
+                ? (currentStatus === 'completed' || currentStatus === 'evaluated' ? 'success' : 'active') 
+                : '';
+                
+            html += `
+                <div class="timeline-item ${logClass}">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-title d-flex justify-content-between align-items-center">
+                            <span>${log.operation_type}</span>
+                            <small class="text-primary fw-medium" style="font-size:0.75rem;">${log.operator.name}</small>
+                        </div>
+                        <div class="timeline-time">${new Date(log.operation_time).toLocaleString()}</div>
+                        ${log.remark ? `<div class="text-muted small mt-1 border-top pt-1 border-secondary-subtle opacity-75">${log.remark}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    // 动作 1：撤销工单
+    async function cancelOrder() {
+        if (!confirm('您确定要撤销此报修申请吗？该操作不可逆。')) return;
+        
+        showLoader();
+        try {
+            // 调用 API 2.4：撤销工单
+            const res = await api.post(`/repairs/${orderId}/cancel/`);
+            showToast(res.message || '工单已撤销', 'success');
+            loadOrderDetail();
+        } catch (e) {
+            showToast(e.error || '撤销工单失败', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+
+    // 动作 2：确认完工
+    async function confirmComplete() {
+        if (!confirm('您核实故障已经修好了吗？确认完工后您可以评价本次服务。')) return;
+
+        showLoader();
+        try {
+            // 调用 API 4.4：学生确认完成 (confirmed: true)
+            const res = await api.post(`/maintenance/${orderId}/confirm/`, { confirmed: true });
+            showToast(res.message || '确认完工成功！', 'success');
+            
+            // 2秒后跳转到评价页
+            setTimeout(() => {
+                window.location.href = `/student/evaluate/${orderId}/`;
+            }, 1000);
+        } catch (e) {
+            showToast('操作失败', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+
+    // 打开返修模态框
+    function openReworkModal() {
+        document.getElementById('reworkReason').value = '';
+        reworkModalInstance.show();
+    }
+
+    // 动作 3：提交返修
+    async function submitRework() {
+        const reason = document.getElementById('reworkReason').value.trim();
+        if (!reason) {
+            showToast('请填写返修原因说明！', 'error');
+            return;
+        }
+
+        reworkModalInstance.hide();
+        showLoader();
+
+        try {
+            // 调用 API 4.4：学生确认完成 (confirmed: false, reason)
+            const res = await api.post(`/maintenance/${orderId}/confirm/`, {
+                confirmed: false,
+                reason: reason
+            });
+            showToast(res.message || '申请返修已提交，工单已退回处理中', 'success');
+            loadOrderDetail();
+        } catch (e) {
+            showToast('提交返修失败', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+</script>
+{% endblock %}

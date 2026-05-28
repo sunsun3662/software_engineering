@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}我的报修工单{% endblock %}
+
+{% block page_header %}我的报修工单{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h4 class="fw-bold m-0 text-slate-800">欢迎回来，<span id="welcomeName">同学</span> 👋</h4>
+        <p class="text-muted m-0 mt-1">在这里查看和跟进您的宿舍报修工单进度。</p>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <a href="/student/repairs/create/" class="btn btn-primary px-4 py-2.5 rounded-3 glow-btn fw-semibold">
+            <i class="bi bi-plus-lg me-2"></i>发起新报修
+        </a>
+    </div>
+</div>
+
+<!-- 筛选工具栏 -->
+<div class="glass-card p-3 mb-4">
+    <div class="row g-3 align-items-center">
+        <div class="col-md-4">
+            <label class="form-label text-muted fw-semibold small">工单状态</label>
+            <select class="form-select" id="filterStatus">
+                <option value="">全部状态</option>
+                <option value="pending_review">待审核</option>
+                <option value="pending_dispatch">待派单</option>
+                <option value="assigned">已派单</option>
+                <option value="in_progress">处理中</option>
+                <option value="pending_confirm">已完成待确认</option>
+                <option value="completed">已完成</option>
+                <option value="evaluated">已评价</option>
+                <option value="rejected">已驳回</option>
+                <option value="cancelled">已撤销</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label text-muted fw-semibold small">故障类别</label>
+            <select class="form-select" id="filterCategory">
+                <option value="">全部类别</option>
+                <option value="water_electric">水电</option>
+                <option value="door_window">门窗</option>
+                <option value="network">网络</option>
+                <option value="furniture">家具</option>
+                <option value="other">其他</option>
+            </select>
+        </div>
+        <div class="col-md-4 text-md-end mt-4 mt-md-5">
+            <button class="btn btn-outline-primary px-4 rounded-3" id="resetFilters">
+                <i class="bi bi-arrow-clockwise me-1"></i>重置
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 工单卡片列表 -->
+<div class="row g-4" id="ordersListContainer">
+    <!-- 加载中占位 -->
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">读取工单中...</span>
+        </div>
+    </div>
+</div>
+
+<!-- 分页导航 -->
+<nav aria-label="Page navigation" class="mt-5 d-none" id="paginationNav">
+    <ul class="pagination justify-content-center gap-2" id="paginationContainer">
+        <!-- JS 动态注入 -->
+    </ul>
+</nav>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentPage = 1;
+    const pageSize = 6; // 每页显示 6 个工单
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // 1. 设置个人欢迎语
+        const user = JSON.parse(localStorage.getItem('dormfix_user'));
+        if (user) {
+            document.getElementById('welcomeName').textContent = user.name;
+        }
+
+        // 2. 加载工单数据
+        loadOrders();
+
+        // 3. 筛选条件变更事件
+        document.getElementById('filterStatus').addEventListener('change', () => {
+            currentPage = 1;
+            loadOrders();
+        });
+        document.getElementById('filterCategory').addEventListener('change', () => {
+            currentPage = 1;
+            loadOrders();
+        });
+        
+        // 重置筛选
+        document.getElementById('resetFilters').addEventListener('click', () => {
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterCategory').value = '';
+            currentPage = 1;
+            loadOrders();
+        });
+    });
+
+    // 核心 AJAX 请求拉取工单
+    async function loadOrders() {
+        const status = document.getElementById('filterStatus').value;
+        const category = document.getElementById('filterCategory').value;
+        const container = document.getElementById('ordersListContainer');
+        const paginationNav = document.getElementById('paginationNav');
+        
+        let url = `/repairs/?page=${currentPage}&page_size=${pageSize}`;
+        if (status) url += `&status=${status}`;
+        if (category) url += `&category=${category}`;
+
+        try {
+            const data = await api.get(url);
+            renderOrders(data.results, container);
+            renderPagination(data.count, paginationNav);
+        } catch (error) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <div class="alert alert-danger d-inline-block rounded-3 glass-card" role="alert">
+                        <i class="bi bi-exclamation-octagon-fill me-2 fs-5"></i>无法加载工单数据，请稍后重试。
+                    </div>
+                </div>
+            `;
+            paginationNav.classList.add('d-none');
+        }
+    }
+
+    // 渲染工单卡片 HTML
+    function renderOrders(orders, container) {
+        if (!orders || orders.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <div class="glass-card p-5 d-inline-block text-center border-0" style="max-width: 400px;">
+                        <i class="bi bi-journal-x text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="fw-bold mt-3 text-secondary">暂无报修工单</h5>
+                        <p class="text-muted small m-0 mt-2">如果您宿舍的设备需要维修，点击右上角“发起新报修”即可提交工单。</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        const categoryIcons = {
+            'water_electric': 'bi-lightning-charge-fill text-warning',
+            'door_window': 'bi-door-closed-fill text-info',
+            'network': 'bi-wifi text-primary',
+            'furniture': 'bi-lamp-fill text-success',
+            'other': 'bi-question-circle-fill text-secondary'
+        };
+
+        const urgencyBadges = {
+            'normal': 'bg-secondary-subtle text-secondary',
+            'urgent': 'bg-danger-subtle text-danger'
+        };
+
+        let html = '';
+        orders.forEach(order => {
+            const badge = STATUS_MAP[order.status] || { text: order.status_display, class: 'bg-secondary' };
+            const iconClass = categoryIcons[order.category] || 'bi-gear-fill';
+            const urgencyClass = urgencyBadges[order.urgency_level] || 'bg-light text-dark';
+            
+            // 首张图片展示，无图片则显示默认占位符
+            const firstImage = order.image_urls && order.image_urls.length > 0 
+                ? order.image_urls[0] 
+                : null;
+            
+            html += `
+                <div class="col-md-6 col-lg-4">
+                    <div class="glass-card hover-up h-100 overflow-hidden d-flex flex-column border-0 shadow-sm position-relative">
+                        <!-- 紧急程度标签 -->
+                        <span class="position-absolute top-0 end-0 m-3 badge ${urgencyClass} border-0 rounded-pill px-2.5 py-1 fw-semibold small">
+                            ${order.urgency_level_display}
+                        </span>
+
+                        <div class="card-body p-4 d-flex flex-column">
+                            <!-- 类别与单号 -->
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <div class="rounded-3 p-2 bg-light d-flex align-items-center justify-content-center">
+                                    <i class="bi ${iconClass} fs-5"></i>
+                                </div>
+                                <div>
+                                    <span class="badge ${badge.class} rounded-3 py-1.5 px-2.5 fw-semibold small">${badge.text}</span>
+                                    <div class="text-muted mt-1" style="font-size: 0.75rem;">单号: ${order.order_no}</div>
+                                </div>
+                            </div>
+                            
+                            <!-- 描述 -->
+                            <h6 class="fw-bold text-slate-800 mb-2">${order.category_display}报修</h6>
+                            <p class="card-text text-muted text-truncate-3 small flex-grow-1" style="min-height: 54px;">
+                                ${order.description}
+                            </p>
+
+                            <hr class="my-3 border-secondary-subtle opacity-50">
+
+                            <!-- 位置 & 时间 -->
+                            <div class="d-flex align-items-center justify-content-between text-muted small mb-3">
+                                <div>
+                                    <i class="bi bi-geo-alt-fill me-1"></i>${order.room.building_name} ${order.room.room_no}
+                                </div>
+                                <div>
+                                    <i class="bi bi-clock-history me-1"></i>${new Date(order.submit_time).toLocaleDateString()}
+                                </div>
+                            </div>
+
+                            <a href="/student/orders/${order.id}/" class="btn btn-outline-primary w-100 rounded-3 py-2 fw-semibold mt-auto btn-sm">
+                                查看进度与详情<i class="bi bi-chevron-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    // 渲染分页组件
+    function renderPagination(totalCount, navElement) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        const container = document.getElementById('paginationContainer');
+        
+        if (totalPages <= 1) {
+            navElement.classList.add('d-none');
+            return;
+        }
+
+        navElement.classList.remove('d-none');
+        let html = '';
+
+        // 上一页
+        html += `
+            <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                <button class="page-link rounded-3 border-0 px-3 py-2 shadow-sm" onclick="changePage(${currentPage - 1})">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+            </li>
+        `;
+
+        // 页码
+        for (let i = 1; i <= totalPages; i++) {
+            html += `
+                <li class="page-item ${currentPage === i ? 'active' : ''}">
+                    <button class="page-link rounded-3 border-0 px-3 py-2 shadow-sm fw-semibold" onclick="changePage(${i})">
+                        ${i}
+                    </button>
+                </li>
+            `;
+        }
+
+        // 下一页
+        html += `
+            <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                <button class="page-link rounded-3 border-0 px-3 py-2 shadow-sm" onclick="changePage(${currentPage + 1})">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </li>
+        `;
+
+        container.innerHTML = html;
+    }
+
+    // 页数改变
+    function changePage(page) {
+        currentPage = page;
+        loadOrders();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}服务评价{% endblock %}
+
+{% block page_header %}服务评价{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="glass-card p-4 p-md-5 border-0 shadow-sm">
+            <div class="text-center mb-4">
+                <div class="d-inline-flex align-items-center justify-content-center bg-success-subtle text-success rounded-circle mb-3" style="width: 54px; height: 54px;">
+                    <i class="bi bi-star-fill fs-3"></i>
+                </div>
+                <h4 class="fw-bold text-slate-800 m-0">评价本次报修服务</h4>
+                <p class="text-muted small mt-2">您的反馈将直接计入师傅的绩效考核，帮助我们不断改善后勤质量。</p>
+            </div>
+
+            <!-- 工单简明卡片 -->
+            <div class="p-3 bg-light rounded-3 mb-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="fw-bold m-0" id="orderCategoryText">水电报修</h6>
+                    <small class="text-muted" id="orderNoText">工单号: --</small>
+                </div>
+                <span class="badge bg-success-subtle text-success border-0 px-2.5 py-1.5 fw-semibold small">已完工</span>
+            </div>
+
+            <form id="evaluationForm" novalidate>
+                <!-- 维度 1：维修速度 -->
+                <div class="mb-4 text-center">
+                    <label class="form-label d-block fw-semibold text-slate-700 mb-2">1. 响应与维修速度</label>
+                    <div class="star-rating d-inline-flex">
+                        <input type="radio" name="speed_score" id="speed-5" value="5" required><label for="speed-5" class="bi bi-star-fill"></label>
+                        <input type="radio" name="speed_score" id="speed-4" value="4"><label for="speed-4" class="bi bi-star-fill"></label>
+                        <input type="radio" name="speed_score" id="speed-3" value="3"><label for="speed-3" class="bi bi-star-fill"></label>
+                        <input type="radio" name="speed_score" id="speed-2" value="2"><label for="speed-2" class="bi bi-star-fill"></label>
+                        <input type="radio" name="speed_score" id="speed-1" value="1"><label for="speed-1" class="bi bi-star-fill"></label>
+                    </div>
+                    <div class="invalid-feedback text-center mt-1" id="speedError">请为维修速度打分</div>
+                </div>
+
+                <!-- 维度 2：服务态度 -->
+                <div class="mb-4 text-center">
+                    <label class="form-label d-block fw-semibold text-slate-700 mb-2">2. 维修人员服务态度</label>
+                    <div class="star-rating d-inline-flex">
+                        <input type="radio" name="attitude_score" id="attitude-5" value="5" required><label for="attitude-5" class="bi bi-star-fill"></label>
+                        <input type="radio" name="attitude_score" id="attitude-4" value="4"><label for="attitude-4" class="bi bi-star-fill"></label>
+                        <input type="radio" name="attitude_score" id="attitude-3" value="3"><label for="attitude-3" class="bi bi-star-fill"></label>
+                        <input type="radio" name="attitude_score" id="attitude-2" value="2"><label for="attitude-2" class="bi bi-star-fill"></label>
+                        <input type="radio" name="attitude_score" id="attitude-1" value="1"><label for="attitude-1" class="bi bi-star-fill"></label>
+                    </div>
+                    <div class="invalid-feedback text-center mt-1" id="attitudeError">请为服务态度打分</div>
+                </div>
+
+                <!-- 维度 3：维修质量 -->
+                <div class="mb-4 text-center">
+                    <label class="form-label d-block fw-semibold text-slate-700 mb-2">3. 现场维修与解决质量</label>
+                    <div class="star-rating d-inline-flex">
+                        <input type="radio" name="quality_score" id="quality-5" value="5" required><label for="quality-5" class="bi bi-star-fill"></label>
+                        <input type="radio" name="quality_score" id="quality-4" value="4"><label for="quality-4" class="bi bi-star-fill"></label>
+                        <input type="radio" name="quality_score" id="quality-3" value="3"><label for="quality-3" class="bi bi-star-fill"></label>
+                        <input type="radio" name="quality_score" id="quality-2" value="2"><label for="quality-2" class="bi bi-star-fill"></label>
+                        <input type="radio" name="quality_score" id="quality-1" value="1"><label for="quality-1" class="bi bi-star-fill"></label>
+                    </div>
+                    <div class="invalid-feedback text-center mt-1" id="qualityError">请为维修质量打分</div>
+                </div>
+
+                <!-- 文字评语 -->
+                <div class="mb-4 mt-5">
+                    <label for="content" class="form-label fw-semibold text-slate-700">写点评价语 (选填)</label>
+                    <textarea class="form-control" id="content" rows="3" maxlength="200" placeholder="分享一下您的维修体验，限 200 字。"></textarea>
+                    <div class="d-flex justify-content-between mt-1">
+                        <div class="invalid-feedback m-0" id="contentValidationError">评论内容含敏感词，请修改</div>
+                        <small class="text-muted ms-auto"><span id="charCount">0</span>/200 字</small>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 justify-content-end mt-5">
+                    <a href="/student/orders/" class="btn btn-outline-secondary px-4 rounded-3">返回工单列表</a>
+                    <button type="submit" class="btn btn-primary px-5 rounded-3 glow-btn fw-semibold">提交服务评价</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const urlParts = window.location.pathname.split('/');
+    const orderId = urlParts[urlParts.length - 2]; // 格式: /student/evaluate/{id}/
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        // 1. 获取工单基本信息
+        showLoader();
+        try {
+            const order = await api.get(`/repairs/${orderId}/`);
+            document.getElementById('orderCategoryText').textContent = `${order.category_display}报修`;
+            document.getElementById('orderNoText').textContent = `工单号: ${order.order_no}`;
+        } catch (e) {
+            showToast('加载工单信息失败', 'error');
+        } finally {
+            hideLoader();
+        }
+
+        // 字数计数
+        const contentTextarea = document.getElementById('content');
+        const charCount = document.getElementById('charCount');
+        contentTextarea.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+        });
+
+        // 2. 评价提交
+        const form = document.getElementById('evaluationForm');
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            form.classList.remove('was-validated');
+
+            // 检查评分必填项
+            const speedChecked = document.querySelector('input[name="speed_score"]:checked');
+            const attitudeChecked = document.querySelector('input[name="attitude_score"]:checked');
+            const qualityChecked = document.querySelector('input[name="quality_score"]:checked');
+
+            let isValid = true;
+            
+            if (!speedChecked) {
+                document.getElementById('speedError').style.display = 'block';
+                isValid = false;
+            } else {
+                document.getElementById('speedError').style.display = 'none';
+            }
+
+            if (!attitudeChecked) {
+                document.getElementById('attitudeError').style.display = 'block';
+                isValid = false;
+            } else {
+                document.getElementById('attitudeError').style.display = 'none';
+            }
+
+            if (!qualityChecked) {
+                document.getElementById('qualityError').style.display = 'block';
+                isValid = false;
+            } else {
+                document.getElementById('qualityError').style.display = 'none';
+            }
+
+            if (!isValid) return;
+
+            showLoader();
+            const payload = {
+                speed_score: parseInt(speedChecked.value),
+                attitude_score: parseInt(attitudeChecked.value),
+                quality_score: parseInt(qualityChecked.value),
+                content: contentTextarea.value.trim()
+            };
+
+            try {
+                // 调用 API 5.1：提交评价
+                const res = await api.post(`/feedback/evaluate/${orderId}/`, payload);
+                showToast(res.message || '评价成功，感谢您的反馈！', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = '/student/orders/';
+                }, 1500);
+            } catch (error) {
+                // 处理敏感词等 400 校验错误
+                if (error && error.content) {
+                    contentTextarea.classList.add('is-invalid');
+                    document.getElementById('contentValidationError').textContent = error.content.join(', ');
+                    document.getElementById('contentValidationError').style.display = 'block';
+                } else if (error && error.detail) {
+                    showToast(error.detail, 'error');
+                } else {
+                    showToast('提交评价失败', 'error');
+                }
+            } finally {
+                hideLoader();
+            }
+        });
+    });
+</script>
+{% endblock %}

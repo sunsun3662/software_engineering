@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+
+{% block title %}提交宿舍报修申请{% endblock %}
+
+{% block page_header %}提交报修{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="glass-card p-4 p-md-5 border-0 shadow-sm">
+            <h4 class="fw-bold text-primary mb-4 text-center"><i class="bi bi-tools me-2"></i>发起报修申请</h4>
+            
+            <!-- 三步向导指示器 -->
+            <div class="row text-center mb-5 position-relative">
+                <div class="col-4 step-item active" id="step1Header">
+                    <div class="step-num bg-primary text-white mx-auto rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:36px; height:36px;">1</div>
+                    <div class="small fw-semibold mt-2 text-primary">选择位置</div>
+                </div>
+                <div class="col-4 step-item" id="step2Header">
+                    <div class="step-num bg-secondary-subtle text-secondary mx-auto rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:36px; height:36px;">2</div>
+                    <div class="small text-muted mt-2">故障描述</div>
+                </div>
+                <div class="col-4 step-item" id="step3Header">
+                    <div class="step-num bg-secondary-subtle text-secondary mx-auto rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:36px; height:36px;">3</div>
+                    <div class="small text-muted mt-2">现场照片</div>
+                </div>
+            </div>
+
+            <!-- 报修拦截警告区 -->
+            <div class="alert alert-danger d-none shadow-sm rounded-3 mb-4" id="requestBlockedAlert" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-exclamation-octagon-fill fs-4 me-3"></i>
+                    <div>
+                        <strong class="d-block mb-1">报修受到限制</strong>
+                        <span id="blockedMessage">您当前有多个工单正在处理中，暂不能提交新报修。</span>
+                    </div>
+                </div>
+            </div>
+
+            <form id="repairForm" novalidate>
+                <!-- 第一步：选择位置 -->
+                <div class="step-content" id="step1Content">
+                    <h5 class="fw-bold mb-3 text-slate-800"><i class="bi bi-geo-alt me-2 text-primary"></i>第一步：选择您的宿舍位置</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="buildingSelect" class="form-label fw-medium">宿舍楼栋</label>
+                            <select class="form-select" id="buildingSelect" required>
+                                <option value="" disabled selected>-- 请选择楼栋 --</option>
+                            </select>
+                            <div class="invalid-feedback">请选择宿舍楼栋</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="roomSelect" class="form-label fw-medium">宿舍房间</label>
+                            <select class="form-select" id="roomSelect" required disabled>
+                                <option value="" disabled selected>-- 请先选择楼栋 --</option>
+                            </select>
+                            <div class="invalid-feedback">请选择您的房间号</div>
+                        </div>
+                    </div>
+                    <div class="text-end mt-5">
+                        <button type="button" class="btn btn-primary px-4 py-2 rounded-3 glow-btn fw-semibold" id="nextToStep2">
+                            下一步：填写描述<i class="bi bi-chevron-right ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 第二步：故障描述 -->
+                <div class="step-content d-none" id="step2Content">
+                    <h5 class="fw-bold mb-3 text-slate-800"><i class="bi bi-file-earmark-text me-2 text-primary"></i>第二步：描述故障详情</h5>
+                    <div class="mb-4">
+                        <label for="categorySelect" class="form-label fw-medium">报修类别</label>
+                        <select class="form-select" id="categorySelect" required>
+                            <option value="" disabled selected>-- 请选择故障类别 --</option>
+                            <option value="water_electric">水电 (水龙头、灯泡、开关、插座等)</option>
+                            <option value="door_window">门窗 (锁具、把手、玻璃、纱窗等)</option>
+                            <option value="network">网络 (宽带接口、校园网无法连接等)</option>
+                            <option value="furniture">家具 (床铺、书桌、柜子等)</option>
+                            <option value="other">其他</option>
+                        </select>
+                        <div class="invalid-feedback" id="categoryError">请选择报修类别</div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="descriptionText" class="form-label fw-medium">故障详细描述</label>
+                        <textarea class="form-control" id="descriptionText" rows="4" maxlength="200" placeholder="请详细描述故障的具体情况（限 200 字），有助于维修师傅快速排查定位问题。" required></textarea>
+                        <div class="d-flex justify-content-between mt-1">
+                            <span class="invalid-feedback m-0" id="descriptionError">请填写故障描述</span>
+                            <small class="text-muted ms-auto"><span id="charCount">0</span>/200 字</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium d-block">紧急程度</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="urgency" id="urgencyNormal" value="normal" checked>
+                            <label class="form-check-label fw-medium text-muted" for="urgencyNormal">普通</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="urgency" id="urgencyUrgent" value="urgent">
+                            <label class="form-check-label fw-medium text-danger" for="urgencyUrgent">紧急 (可能导致水浸、漏电等重大隐患)</label>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-5">
+                        <button type="button" class="btn btn-outline-secondary px-4 rounded-3" id="backToStep1">
+                            <i class="bi bi-chevron-left me-2"></i>返回上一步
+                        </button>
+                        <button type="button" class="btn btn-primary px-4 rounded-3 glow-btn fw-semibold" id="nextToStep3">
+                            下一步：上传照片<i class="bi bi-chevron-right ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 第三步：现场照片 -->
+                <div class="step-content d-none" id="step3Content">
+                    <h5 class="fw-bold mb-2 text-slate-800"><i class="bi bi-camera me-2 text-primary"></i>第三步：上传故障现场照片</h5>
+                    <p class="text-muted small mb-4">上传现场照片（限 3 张，每张不得超过 5MB），能让维修人员更快速地准备工具与备品备件。</p>
+                    
+                    <!-- 拖拽/点击上传区 -->
+                    <div class="upload-zone text-center p-4 mb-4" id="dropzone" onclick="document.getElementById('fileInput').click()">
+                        <i class="bi bi-cloud-upload text-primary" style="font-size: 2.5rem;"></i>
+                        <h6 class="fw-bold text-slate-700 mt-2">点击或拖拽文件到此处上传</h6>
+                        <span class="text-muted small">支持 PNG, JPG, JPEG 格式，小于 5MB</span>
+                        <input type="file" id="fileInput" multiple accept="image/png, image/jpeg, image/jpg" class="d-none">
+                    </div>
+
+                    <!-- 缩略图预览容器 -->
+                    <div class="d-flex gap-3 flex-wrap mb-4" id="previewsContainer">
+                        <!-- 动态添加 -->
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-5">
+                        <button type="button" class="btn btn-outline-secondary px-4 rounded-3" id="backToStep2">
+                            <i class="bi bi-chevron-left me-2"></i>返回上一步
+                        </button>
+                        <button type="submit" class="btn btn-success px-5 rounded-3 glow-btn fw-semibold" id="submitFormBtn">
+                            确认并提交报修<i class="bi bi-send-fill ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 保存用户选择的图片文件列表
+    let selectedFiles = [];
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        // 1. 初始化加载宿舍楼栋
+        showLoader();
+        try {
+            const buildings = await api.get('/accounts/buildings/');
+            const buildingSelect = document.getElementById('buildingSelect');
+            buildings.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b.id;
+                opt.textContent = `${b.building_name} (${b.gender_limit ? b.gender_limit : '混住'})`;
+                buildingSelect.appendChild(opt);
+            });
+        } catch (e) {
+            showToast('获取宿舍楼栋列表失败', 'error');
+        } finally {
+            hideLoader();
+        }
+
+        // 2. 楼栋选择变更级联加载房间
+        const buildingSelect = document.getElementById('buildingSelect');
+        const roomSelect = document.getElementById('roomSelect');
+        buildingSelect.addEventListener('change', async function() {
+            const buildingId = this.value;
+            roomSelect.innerHTML = '<option value="" disabled selected>-- 请选择房间号 --</option>';
+            roomSelect.disabled = true;
+
+            showLoader();
+            try {
+                const rooms = await api.get(`/accounts/rooms/?building=${buildingId}`);
+                rooms.forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r.id;
+                    opt.textContent = `${r.room_no} 室 (${r.floor_no}层)`;
+                    roomSelect.appendChild(opt);
+                });
+                roomSelect.disabled = false;
+            } catch (e) {
+                showToast('读取房间列表失败', 'error');
+            } finally {
+                hideLoader();
+            }
+        });
+
+        // 3. 字数计数器
+        const descTextarea = document.getElementById('descriptionText');
+        const charCount = document.getElementById('charCount');
+        descTextarea.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+        });
+
+        // 4. 图片上传与预览处理
+        const fileInput = document.getElementById('fileInput');
+        const previewsContainer = document.getElementById('previewsContainer');
+
+        fileInput.addEventListener('change', function() {
+            handleFiles(this.files);
+            // 重置 fileInput 的 value，以允许用户重复选择同名文件
+            this.value = '';
+        });
+
+        // 拖拽上传支持
+        const dropzone = document.getElementById('dropzone');
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('border-primary', 'bg-light');
+        });
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('border-primary', 'bg-light');
+        });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-primary', 'bg-light');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        function handleFiles(files) {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                // 拦截 1: 文件格式
+                if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+                    showToast(`文件 ${file.name} 格式不支持，仅限 PNG/JPG。`, 'error');
+                    continue;
+                }
+                
+                // 拦截 2: 单张体积 5MB
+                if (file.size > 5 * 1024 * 1024) {
+                    showToast(`文件 ${file.name} 大小超过 5MB。`, 'error');
+                    continue;
+                }
+                
+                // 拦截 3: 总张数限制 3 张
+                if (selectedFiles.length >= 3) {
+                    showToast('最多仅允许上传 3 张报修照片。', 'error');
+                    break;
+                }
+
+                selectedFiles.push(file);
+                renderPreviews();
+            }
+        }
+
+        // 渲染缩略图预览
+        function renderPreviews() {
+            previewsContainer.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const url = URL.createObjectURL(file);
+                const div = document.createElement('div');
+                div.className = 'image-preview-wrapper shadow-sm';
+                div.innerHTML = `
+                    <img src="${url}" alt="预览">
+                    <button type="button" class="image-preview-remove" onclick="removeFile(${index})">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                `;
+                previewsContainer.appendChild(div);
+            });
+        }
+
+        // 删除已选图片 (挂载在全局方便 inline 调用)
+        window.removeFile = function(index) {
+            selectedFiles.splice(index, 1);
+            renderPreviews();
+        };
+
+        // 5. 步骤导航页面切换
+        const step1Content = document.getElementById('step1Content');
+        const step2Content = document.getElementById('step2Content');
+        const step3Content = document.getElementById('step3Content');
+
+        const step1Header = document.getElementById('step1Header');
+        const step2Header = document.getElementById('step2Header');
+        const step3Header = document.getElementById('step3Header');
+
+        // Step 1 -> Step 2
+        document.getElementById('nextToStep2').addEventListener('click', function() {
+            if (!buildingSelect.value || !roomSelect.value) {
+                document.getElementById('repairForm').classList.add('was-validated');
+                showToast('请完整选择宿舍的楼栋和房间！', 'error');
+                return;
+            }
+            
+            // 切换面板
+            step1Content.classList.add('d-none');
+            step2Content.classList.remove('d-none');
+            
+            // 导航变色
+            step2Header.classList.add('active');
+            step2Header.querySelector('.step-num').className = 'step-num bg-primary text-white mx-auto rounded-circle d-flex align-items-center justify-content-center fw-bold';
+            step2Header.querySelector('.small').className = 'small fw-semibold mt-2 text-primary';
+        });
+
+        // Step 2 -> Step 1 (返回)
+        document.getElementById('backToStep1').addEventListener('click', function() {
+            step2Content.classList.add('d-none');
+            step1Content.classList.remove('d-none');
+            
+            step2Header.classList.remove('active');
+            step2Header.querySelector('.step-num').className = 'step-num bg-secondary-subtle text-secondary mx-auto rounded-circle d-flex align-items-center justify-content-center fw-bold';
+            step2Header.querySelector('.small').className = 'small text-muted mt-2';
+        });
+
+        // Step 2 -> Step 3
+        document.getElementById('nextToStep3').addEventListener('click', function() {
+            const categorySelect = document.getElementById('categorySelect');
+            const desc = document.getElementById('descriptionText');
+            
+            let valid = true;
+            if (!categorySelect.value) {
+                categorySelect.classList.add('is-invalid');
+                valid = false;
+            } else {
+                categorySelect.classList.remove('is-invalid');
+            }
+
+            if (!desc.value.trim()) {
+                desc.classList.add('is-invalid');
+                valid = false;
+            } else {
+                desc.classList.remove('is-invalid');
+            }
+
+            if (!valid) return;
+
+            step2Content.classList.add('d-none');
+            step3Content.classList.remove('d-none');
+
+            step3Header.classList.add('active');
+            step3Header.querySelector('.step-num').className = 'step-num bg-primary text-white mx-auto rounded-circle d-flex align-items-center justify-content-center fw-bold';
+            step3Header.querySelector('.small').className = 'small fw-semibold mt-2 text-primary';
+        });
+
+        // Step 3 -> Step 2 (返回)
+        document.getElementById('backToStep2').addEventListener('click', function() {
+            step3Content.classList.add('d-none');
+            step2Content.classList.remove('d-none');
+
+            step3Header.classList.remove('active');
+            step3Header.querySelector('.step-num').className = 'step-num bg-secondary-subtle text-secondary mx-auto rounded-circle d-flex align-items-center justify-content-center fw-bold';
+            step3Header.querySelector('.small').className = 'small text-muted mt-2';
+        });
+
+        // 6. 表单提交逻辑
+        const form = document.getElementById('repairForm');
+        const blockedAlert = document.getElementById('requestBlockedAlert');
+        const blockedMessage = document.getElementById('blockedMessage');
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            blockedAlert.classList.add('d-none');
+
+            showLoader();
+            
+            // 构建 FormData 进行多媒体复合提交
+            const formData = new FormData();
+            formData.append('room', roomSelect.value);
+            formData.append('category', document.getElementById('categorySelect').value);
+            formData.append('description', descTextarea.value.trim());
+            
+            const urgencyVal = document.querySelector('input[name="urgency"]:checked').value;
+            formData.append('urgency_level', urgencyVal);
+            
+            // 逐个追加图片文件负载
+            selectedFiles.forEach(file => {
+                formData.append('images', file);
+            });
+
+            try {
+                // 调用 API 2.2：创建报修
+                await api.post('/repairs/', formData);
+                
+                hideLoader();
+                // 成功后清除局部选择
+                selectedFiles = [];
+                showToast('报修申请提交成功！', 'success');
+                
+                // 3秒后自动重定向回工单列表
+                setTimeout(() => {
+                    window.location.href = '/student/orders/';
+                }, 1500);
+
+            } catch (error) {
+                hideLoader();
+                console.error(error);
+                
+                // 处理 403 频控限制 (当前未完工工单 >= 3)
+                if (error && error.error) {
+                    blockedAlert.classList.remove('d-none');
+                    blockedMessage.textContent = error.error;
+                    // 回滚回第一步并定位错误
+                    step3Content.classList.add('d-none');
+                    step1Content.classList.remove('d-none');
+                    step2Header.classList.remove('active');
+                    step3Header.classList.remove('active');
+                    return;
+                }
+                
+                // 处理 400 字段级校验报错
+                if (error && typeof error === 'object') {
+                    showToast('表单校验失败，请检查填写内容。', 'error');
+                    
+                    // 字段错误分别挂在对应的输入域下方
+                    if (error.description) {
+                        const desc = document.getElementById('descriptionText');
+                        desc.classList.add('is-invalid');
+                        document.getElementById('descriptionError').textContent = error.description.join(', ');
+                        // 切换到第二步面板
+                        step3Content.classList.add('d-none');
+                        step2Content.classList.remove('d-none');
+                    }
+                    if (error.category) {
+                        const cat = document.getElementById('categorySelect');
+                        cat.classList.add('is-invalid');
+                        document.getElementById('categoryError').textContent = error.category.join(', ');
+                        step3Content.classList.add('d-none');
+                        step2Content.classList.remove('d-none');
+                    }
+                } else {
+                    showToast('接口交互异常，提交失败。', 'error');
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
