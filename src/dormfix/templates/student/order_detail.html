@@ -242,7 +242,7 @@
                     <div class="timeline-content">
                         <div class="timeline-title d-flex justify-content-between align-items-center">
                             <span>${log.operation_type}</span>
-                            <small class="text-primary fw-medium" style="font-size:0.75rem;">${log.operator.name}</small>
+                            <small class="text-primary fw-medium" style="font-size:0.75rem;">${log.operator_name}</small>
                         </div>
                         <div class="timeline-time">${new Date(log.operation_time).toLocaleString()}</div>
                         ${log.remark ? `<div class="text-muted small mt-1 border-top pt-1 border-secondary-subtle opacity-75">${log.remark}</div>` : ''}
