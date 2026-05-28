@@ -39,14 +39,14 @@ def statistics_view(request):
     completed_orders = orders.filter(status__in=['completed', 'evaluated']).count()
     completion_rate = round(completed_orders / total_orders * 100, 1) if total_orders > 0 else 0
 
-    # 平均响应时长（小时）- 用Python计算
+    # 平均响应时长（小时）
     assigned_orders = orders.filter(assign_time__isnull=False, submit_time__isnull=False)
     avg_response_hours = 0
     if assigned_orders.exists():
         total_hours = 0
         count = 0
-        for o in assigned_orders[:100]:  # 限制计算量
-            diff = (o.assign_time - o.submit_time).total_seconds() / 3600
+        for o in assigned_orders[:100]:
+            diff = max(0, (o.assign_time - o.submit_time).total_seconds() / 3600)
             total_hours += diff
             count += 1
         avg_response_hours = round(total_hours / count, 1) if count > 0 else 0
@@ -58,7 +58,7 @@ def statistics_view(request):
         total_hours = 0
         count = 0
         for o in finished_orders[:100]:
-            diff = (o.finish_time - o.submit_time).total_seconds() / 3600
+            diff = max(0, (o.finish_time - o.submit_time).total_seconds() / 3600)
             total_hours += diff
             count += 1
         avg_completion_hours = round(total_hours / count, 1) if count > 0 else 0

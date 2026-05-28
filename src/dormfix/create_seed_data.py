@@ -113,356 +113,238 @@ def create_seed_data():
         room1 = DormRoom.objects.filter(building__building_code='A01').first()
         room2 = DormRoom.objects.filter(building__building_code='A01', room_no='102').first()
         room3 = DormRoom.objects.filter(building__building_code='A02').first()
-        room4 = DormRoom.objects.filter(building__building_code='A03').first()
 
         now = timezone.now()
 
-        # 工单1: 待审核 (student001)
+        # 时间规律：提交 → 审核(+2h) → 派单(+4h) → 接单(+6h) → 完工(+12h) → 确认(+24h)
+
+        # ---- 工单1: 待审核 (2小时前提交) ----
+        t_submit = now - timedelta(hours=2)
         order1 = WorkOrder.objects.create(
-            order_no='WX20260501001',
-            student=student1,
-            room=room1,
-            category='water_electric',
-            description='水龙头漏水，已经三天了，滴水很厉害',
-            urgency_level='normal',
-            status='pending_review',
-            submit_time=now - timedelta(hours=2)
+            order_no='WX20260528001', student=student1, room=room1,
+            category='water_electric', description='水龙头漏水，已经三天了，滴水很厉害',
+            urgency_level='normal', status='pending_review', submit_time=t_submit
         )
-        WorkOrderLog.objects.create(
-            work_order=order1, operator=student1,
-            to_status='pending_review', operation_type='提交报修'
-        )
+        WorkOrderLog.objects.create(work_order=order1, operator=student1,
+            to_status='pending_review', operation_type='提交报修', operation_time=t_submit)
 
-        # 工单2: 待派单 (student001) - 审核通过
+        # ---- 工单2: 待派单 (昨天提交，已审核) ----
+        t_submit = now - timedelta(days=1)
+        t_review = t_submit + timedelta(hours=2)
         order2 = WorkOrder.objects.create(
-            order_no='WX20260501002',
-            student=student1,
-            room=room1,
-            category='door_window',
-            description='宿舍门锁坏了，关不上门',
-            urgency_level='urgent',
-            status='pending_dispatch',
-            submit_time=now - timedelta(days=1)
+            order_no='WX20260528002', student=student1, room=room1,
+            category='door_window', description='宿舍门锁坏了，关不上门',
+            urgency_level='urgent', status='pending_dispatch', submit_time=t_submit
         )
-        WorkOrderLog.objects.create(
-            work_order=order2, operator=student1,
-            to_status='pending_review', operation_type='提交报修',
-            operation_time=now - timedelta(days=1)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order2, operator=admin,
+        WorkOrderLog.objects.create(work_order=order2, operator=student1,
+            to_status='pending_review', operation_type='提交报修', operation_time=t_submit)
+        WorkOrderLog.objects.create(work_order=order2, operator=admin,
             from_status='pending_review', to_status='pending_dispatch',
-            operation_type='审核通过', operation_time=now - timedelta(hours=20),
-            remark='紧急工单，优先处理'
-        )
-        order2.submit_time = now - timedelta(days=1)
-        order2.save()
+            operation_type='审核通过', operation_time=t_review, remark='紧急工单，优先处理')
 
-        # 工单3: 已派单 (student002)
+        # ---- 工单3: 已派单 (3天前提交，已审核+派单) ----
+        t_submit = now - timedelta(days=3)
+        t_review = t_submit + timedelta(hours=3)
+        t_assign = t_submit + timedelta(hours=6)
         order3 = WorkOrder.objects.create(
-            order_no='WX20260501003',
-            student=student2,
-            room=room2,
-            category='network',
-            description='宿舍网络无法连接，无法上网课',
-            urgency_level='normal',
-            status='assigned',
-            submit_time=now - timedelta(days=2),
-            assign_time=now - timedelta(hours=6)
+            order_no='WX20260528003', student=student2, room=room2,
+            category='network', description='宿舍网络无法连接，无法上网课',
+            urgency_level='normal', status='assigned', submit_time=t_submit, assign_time=t_assign
         )
         order3.maintainer = maintainer1
         order3.save()
-        WorkOrderLog.objects.create(
-            work_order=order3, operator=student2,
-            to_status='pending_review', operation_type='提交报修',
-            operation_time=now - timedelta(days=2)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order3, operator=admin,
+        WorkOrderLog.objects.create(work_order=order3, operator=student2,
+            to_status='pending_review', operation_type='提交报修', operation_time=t_submit)
+        WorkOrderLog.objects.create(work_order=order3, operator=admin,
             from_status='pending_review', to_status='pending_dispatch',
-            operation_type='审核通过', operation_time=now - timedelta(days=1, hours=12)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order3, operator=admin,
+            operation_type='审核通过', operation_time=t_review)
+        WorkOrderLog.objects.create(work_order=order3, operator=admin,
             from_status='pending_dispatch', to_status='assigned',
-            operation_type='派发任务', remark='派给王师傅',
-            operation_time=now - timedelta(hours=6)
-        )
+            operation_type='派发任务', remark='派给王师傅', operation_time=t_assign)
 
-        # 工单4: 处理中 (student002)
+        # ---- 工单4: 处理中 (5天前提交，已接单) ----
+        t_submit = now - timedelta(days=5)
+        t_review = t_submit + timedelta(hours=2)
+        t_assign = t_submit + timedelta(hours=5)
+        t_accept = t_assign + timedelta(hours=3)
         order4 = WorkOrder.objects.create(
-            order_no='WX20260501004',
-            student=student2,
-            room=room2,
-            category='furniture',
-            description='书桌椅子坏了，坐着摇晃',
-            urgency_level='normal',
-            status='in_progress',
-            submit_time=now - timedelta(days=3),
-            assign_time=now - timedelta(days=1)
+            order_no='WX20260528004', student=student2, room=room2,
+            category='furniture', description='书桌椅子坏了，坐着摇晃',
+            urgency_level='normal', status='in_progress', submit_time=t_submit, assign_time=t_assign
         )
         order4.maintainer = maintainer2
         order4.save()
-        WorkOrderLog.objects.create(
-            work_order=order4, operator=student2,
-            to_status='pending_review', operation_type='提交报修',
-            operation_time=now - timedelta(days=3)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order4, operator=admin,
+        WorkOrderLog.objects.create(work_order=order4, operator=student2,
+            to_status='pending_review', operation_type='提交报修', operation_time=t_submit)
+        WorkOrderLog.objects.create(work_order=order4, operator=admin,
             from_status='pending_review', to_status='pending_dispatch',
-            operation_type='审核通过', operation_time=now - timedelta(days=2)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order4, operator=admin,
+            operation_type='审核通过', operation_time=t_review)
+        WorkOrderLog.objects.create(work_order=order4, operator=admin,
             from_status='pending_dispatch', to_status='assigned',
-            operation_type='派发任务', remark='派给李师傅',
-            operation_time=now - timedelta(days=1)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order4, operator=maintainer2,
+            operation_type='派发任务', remark='派给李师傅', operation_time=t_assign)
+        WorkOrderLog.objects.create(work_order=order4, operator=maintainer2,
             from_status='assigned', to_status='in_progress',
-            operation_type='接收任务', operation_time=now - timedelta(hours=18)
-        )
+            operation_type='接收任务', operation_time=t_accept)
 
-        # 工单5: 已完成待确认 (student003)
+        # ---- 工单5: 已完成待确认 (7天前提交，已完工) ----
+        t_submit = now - timedelta(days=7)
+        t_review = t_submit + timedelta(hours=1)
+        t_assign = t_submit + timedelta(hours=4)
+        t_accept = t_assign + timedelta(hours=2)
+        t_finish = t_accept + timedelta(hours=10)
         order5 = WorkOrder.objects.create(
-            order_no='WX20260501005',
-            student=student3,
-            room=room3,
-            category='water_electric',
-            description='宿舍灯泡坏了，需要更换',
-            urgency_level='normal',
-            status='pending_confirm',
-            submit_time=now - timedelta(days=5),
-            assign_time=now - timedelta(days=3),
-            finish_time=now - timedelta(hours=3)
+            order_no='WX20260528005', student=student3, room=room3,
+            category='water_electric', description='宿舍灯泡坏了，需要更换',
+            urgency_level='normal', status='pending_confirm',
+            submit_time=t_submit, assign_time=t_assign, finish_time=t_finish
         )
         order5.maintainer = maintainer1
         order5.save()
-        WorkOrderLog.objects.create(
-            work_order=order5, operator=student3,
-            to_status='pending_review', operation_type='提交报修',
-            operation_time=now - timedelta(days=5)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order5, operator=admin,
+        WorkOrderLog.objects.create(work_order=order5, operator=student3,
+            to_status='pending_review', operation_type='提交报修', operation_time=t_submit)
+        WorkOrderLog.objects.create(work_order=order5, operator=admin,
             from_status='pending_review', to_status='pending_dispatch',
-            operation_type='审核通过', operation_time=now - timedelta(days=4)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order5, operator=admin,
+            operation_type='审核通过', operation_time=t_review)
+        WorkOrderLog.objects.create(work_order=order5, operator=admin,
             from_status='pending_dispatch', to_status='assigned',
-            operation_type='派发任务', operation_time=now - timedelta(days=3)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order5, operator=maintainer1,
+            operation_type='派发任务', operation_time=t_assign)
+        WorkOrderLog.objects.create(work_order=order5, operator=maintainer1,
             from_status='assigned', to_status='in_progress',
-            operation_type='接收任务', operation_time=now - timedelta(days=2)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order5, operator=maintainer1,
+            operation_type='接收任务', operation_time=t_accept)
+        WorkOrderLog.objects.create(work_order=order5, operator=maintainer1,
             from_status='in_progress', to_status='pending_confirm',
-            operation_type='完成维修', remark='已更换新灯泡',
-            operation_time=now - timedelta(hours=3)
-        )
+            operation_type='完成维修', remark='已更换新灯泡', operation_time=t_finish)
 
-        # 工单6: 已完成 (student001) - 可以评价
+        # ---- 工单6: 已完成 (10天前提交，学生已确认) ----
+        t_submit = now - timedelta(days=10)
+        t_review = t_submit + timedelta(hours=3)
+        t_assign = t_submit + timedelta(hours=6)
+        t_accept = t_assign + timedelta(hours=4)
+        t_finish = t_accept + timedelta(hours=8)
+        t_confirm = t_finish + timedelta(hours=12)
         order6 = WorkOrder.objects.create(
-            order_no='WX20260501006',
-            student=student1,
-            room=room1,
-            category='other',
-            description='窗户玻璃有裂痕，存在安全隐患',
-            urgency_level='normal',
-            status='completed',
-            submit_time=now - timedelta(days=10),
-            assign_time=now - timedelta(days=8),
-            finish_time=now - timedelta(days=6)
+            order_no='WX20260528006', student=student1, room=room1,
+            category='other', description='窗户玻璃有裂痕，存在安全隐患',
+            urgency_level='normal', status='completed',
+            submit_time=t_submit, assign_time=t_assign, finish_time=t_finish
         )
         order6.maintainer = maintainer1
         order6.save()
-        WorkOrderLog.objects.create(
-            work_order=order6, operator=student1,
-            to_status='pending_review', operation_type='提交报修',
-            operation_time=now - timedelta(days=10)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order6, operator=admin,
+        WorkOrderLog.objects.create(work_order=order6, operator=student1,
+            to_status='pending_review', operation_type='提交报修', operation_time=t_submit)
+        WorkOrderLog.objects.create(work_order=order6, operator=admin,
             from_status='pending_review', to_status='pending_dispatch',
-            operation_type='审核通过', operation_time=now - timedelta(days=9)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order6, operator=admin,
+            operation_type='审核通过', operation_time=t_review)
+        WorkOrderLog.objects.create(work_order=order6, operator=admin,
             from_status='pending_dispatch', to_status='assigned',
-            operation_type='派发任务', operation_time=now - timedelta(days=8)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order6, operator=maintainer1,
+            operation_type='派发任务', operation_time=t_assign)
+        WorkOrderLog.objects.create(work_order=order6, operator=maintainer1,
             from_status='assigned', to_status='in_progress',
-            operation_type='接收任务', operation_time=now - timedelta(days=7)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order6, operator=maintainer1,
+            operation_type='接收任务', operation_time=t_accept)
+        WorkOrderLog.objects.create(work_order=order6, operator=maintainer1,
             from_status='in_progress', to_status='pending_confirm',
-            operation_type='完成维修', remark='已更换玻璃',
-            operation_time=now - timedelta(days=6, hours=6)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order6, operator=student1,
+            operation_type='完成维修', remark='已更换玻璃', operation_time=t_finish)
+        WorkOrderLog.objects.create(work_order=order6, operator=student1,
             from_status='pending_confirm', to_status='completed',
-            operation_type='确认完成', operation_time=now - timedelta(days=6)
-        )
+            operation_type='确认完成', operation_time=t_confirm)
 
-        # 工单7: 已评价 (student002)
+        # ---- 工单7: 已评价 (15天前提交，全流程完成) ----
+        t_submit = now - timedelta(days=15)
+        t_review = t_submit + timedelta(hours=2)
+        t_assign = t_submit + timedelta(hours=5)
+        t_accept = t_assign + timedelta(hours=3)
+        t_finish = t_accept + timedelta(hours=12)
+        t_confirm = t_finish + timedelta(hours=6)
+        t_evaluate = t_confirm + timedelta(hours=8)
         order7 = WorkOrder.objects.create(
-            order_no='WX20260501007',
-            student=student2,
-            room=room2,
-            category='water_electric',
-            description='卫生间水箱漏水',
-            urgency_level='normal',
-            status='evaluated',
-            submit_time=now - timedelta(days=15),
-            assign_time=now - timedelta(days=13),
-            finish_time=now - timedelta(days=11)
+            order_no='WX20260528007', student=student2, room=room2,
+            category='water_electric', description='卫生间水箱漏水',
+            urgency_level='normal', status='evaluated',
+            submit_time=t_submit, assign_time=t_assign, finish_time=t_finish
         )
         order7.maintainer = maintainer2
         order7.save()
-        WorkOrderLog.objects.create(
-            work_order=order7, operator=student2,
-            to_status='pending_review', operation_type='提交报修',
-            operation_time=now - timedelta(days=15)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order7, operator=admin,
+        WorkOrderLog.objects.create(work_order=order7, operator=student2,
+            to_status='pending_review', operation_type='提交报修', operation_time=t_submit)
+        WorkOrderLog.objects.create(work_order=order7, operator=admin,
             from_status='pending_review', to_status='pending_dispatch',
-            operation_type='审核通过', operation_time=now - timedelta(days=14)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order7, operator=admin,
+            operation_type='审核通过', operation_time=t_review)
+        WorkOrderLog.objects.create(work_order=order7, operator=admin,
             from_status='pending_dispatch', to_status='assigned',
-            operation_type='派发任务', operation_time=now - timedelta(days=13)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order7, operator=maintainer2,
+            operation_type='派发任务', operation_time=t_assign)
+        WorkOrderLog.objects.create(work_order=order7, operator=maintainer2,
             from_status='assigned', to_status='in_progress',
-            operation_type='接收任务', operation_time=now - timedelta(days=12)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order7, operator=maintainer2,
+            operation_type='接收任务', operation_time=t_accept)
+        WorkOrderLog.objects.create(work_order=order7, operator=maintainer2,
             from_status='in_progress', to_status='pending_confirm',
-            operation_type='完成维修', operation_time=now - timedelta(days=11, hours=12)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order7, operator=student2,
+            operation_type='完成维修', operation_time=t_finish)
+        WorkOrderLog.objects.create(work_order=order7, operator=student2,
             from_status='pending_confirm', to_status='completed',
-            operation_type='确认完成', operation_time=now - timedelta(days=11)
-        )
-
-        # 创建评价
+            operation_type='确认完成', operation_time=t_confirm)
         Evaluation.objects.create(
-            work_order=order7,
-            speed_score=5,
-            attitude_score=4,
-            quality_score=5,
+            work_order=order7, speed_score=5, attitude_score=4, quality_score=5,
             content='维修很及时，师傅态度很好，问题完全解决了'
         )
-        order7.status = 'evaluated'
-        order7.save()
-        WorkOrderLog.objects.create(
-            work_order=order7, operator=student2,
+        WorkOrderLog.objects.create(work_order=order7, operator=student2,
             from_status='completed', to_status='evaluated',
-            operation_type='提交评价', operation_time=now - timedelta(days=10)
-        )
+            operation_type='提交评价', operation_time=t_evaluate)
 
-        # 工单8: 已驳回 (student003)
+        # ---- 工单8: 已驳回 (4天前提交) ----
+        t_submit = now - timedelta(days=4)
+        t_reject = t_submit + timedelta(hours=3)
         order8 = WorkOrder.objects.create(
-            order_no='WX20260501008',
-            student=student3,
-            room=room3,
-            category='other',
-            description='想换新空调',
-            urgency_level='normal',
-            status='rejected',
-            submit_time=now - timedelta(days=4)
+            order_no='WX20260528008', student=student3, room=room3,
+            category='other', description='想换新空调',
+            urgency_level='normal', status='rejected', submit_time=t_submit
         )
-        WorkOrderLog.objects.create(
-            work_order=order8, operator=student3,
-            to_status='pending_review', operation_type='提交报修',
-            operation_time=now - timedelta(days=4)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order8, operator=admin,
+        WorkOrderLog.objects.create(work_order=order8, operator=student3,
+            to_status='pending_review', operation_type='提交报修', operation_time=t_submit)
+        WorkOrderLog.objects.create(work_order=order8, operator=admin,
             from_status='pending_review', to_status='rejected',
-            operation_type='审核驳回', remark='非维修范围，属于设备更新需求',
-            operation_time=now - timedelta(days=3)
-        )
+            operation_type='审核驳回', remark='非维修范围，属于设备更新需求', operation_time=t_reject)
 
-        # 工单9: 已撤销 (student001)
+        # ---- 工单9: 已撤销 (2天前提交，1小时后撤销) ----
+        t_submit = now - timedelta(days=2)
+        t_cancel = t_submit + timedelta(hours=1)
         order9 = WorkOrder.objects.create(
-            order_no='WX20260501009',
-            student=student1,
-            room=room1,
-            category='network',
-            description='网速慢',
-            urgency_level='normal',
-            status='cancelled',
-            cancel_flag=1,
-            submit_time=now - timedelta(days=2)
+            order_no='WX20260528009', student=student1, room=room1,
+            category='network', description='网速慢',
+            urgency_level='normal', status='cancelled', cancel_flag=1, submit_time=t_submit
         )
-        WorkOrderLog.objects.create(
-            work_order=order9, operator=student1,
-            to_status='pending_review', operation_type='提交报修',
-            operation_time=now - timedelta(days=2)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order9, operator=student1,
+        WorkOrderLog.objects.create(work_order=order9, operator=student1,
+            to_status='pending_review', operation_type='提交报修', operation_time=t_submit)
+        WorkOrderLog.objects.create(work_order=order9, operator=student1,
             from_status='pending_review', to_status='cancelled',
-            operation_type='撤销工单', remark='网络已自行恢复',
-            operation_time=now - timedelta(days=1, hours=18)
-        )
+            operation_type='撤销工单', remark='网络已自行恢复', operation_time=t_cancel)
 
-        # 工单10: 已完成待确认 - 有投诉 (student003)
+        # ---- 工单10: 已完成待确认 - 有投诉 (8天前提交) ----
+        t_submit = now - timedelta(days=8)
+        t_review = t_submit + timedelta(hours=2)
+        t_assign = t_submit + timedelta(hours=5)
+        t_accept = t_assign + timedelta(hours=3)
+        t_finish = t_accept + timedelta(hours=14)
         order10 = WorkOrder.objects.create(
-            order_no='WX20260501010',
-            student=student3,
-            room=room3,
-            category='door_window',
-            description='阳台门关不严，漏风',
-            urgency_level='normal',
-            status='pending_confirm',
-            submit_time=now - timedelta(days=7),
-            assign_time=now - timedelta(days=5),
-            finish_time=now - timedelta(days=2)
+            order_no='WX20260528010', student=student3, room=room3,
+            category='door_window', description='阳台门关不严，漏风',
+            urgency_level='normal', status='pending_confirm',
+            submit_time=t_submit, assign_time=t_assign, finish_time=t_finish
         )
         order10.maintainer = maintainer1
         order10.save()
-        WorkOrderLog.objects.create(
-            work_order=order10, operator=student3,
-            to_status='pending_review', operation_type='提交报修',
-            operation_time=now - timedelta(days=7)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order10, operator=admin,
+        WorkOrderLog.objects.create(work_order=order10, operator=student3,
+            to_status='pending_review', operation_type='提交报修', operation_time=t_submit)
+        WorkOrderLog.objects.create(work_order=order10, operator=admin,
             from_status='pending_review', to_status='pending_dispatch',
-            operation_type='审核通过', operation_time=now - timedelta(days=6)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order10, operator=admin,
+            operation_type='审核通过', operation_time=t_review)
+        WorkOrderLog.objects.create(work_order=order10, operator=admin,
             from_status='pending_dispatch', to_status='assigned',
-            operation_type='派发任务', operation_time=now - timedelta(days=5)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order10, operator=maintainer1,
+            operation_type='派发任务', operation_time=t_assign)
+        WorkOrderLog.objects.create(work_order=order10, operator=maintainer1,
             from_status='assigned', to_status='in_progress',
-            operation_type='接收任务', operation_time=now - timedelta(days=4)
-        )
-        WorkOrderLog.objects.create(
-            work_order=order10, operator=maintainer1,
+            operation_type='接收任务', operation_time=t_accept)
+        WorkOrderLog.objects.create(work_order=order10, operator=maintainer1,
             from_status='in_progress', to_status='pending_confirm',
-            operation_type='完成维修', operation_time=now - timedelta(days=2)
-        )
+            operation_type='完成维修', operation_time=t_finish)
 
         # 创建投诉
         Complaint.objects.create(
