@@ -32,6 +32,7 @@ urlpatterns = [
     path('admin/pending-dispatch/', TemplateView.as_view(template_name='admin/dashboard.html')),
     path('admin/complaints/', TemplateView.as_view(template_name='admin/complaints.html')),
     path('admin/dashboard/', TemplateView.as_view(template_name='admin/statistics.html')),
+    path('admin/users/', TemplateView.as_view(template_name='admin/user_manage.html')),
     
     # 维修员端页面
     path('maintainer/tasks/', TemplateView.as_view(template_name='maintainer/dashboard.html')),

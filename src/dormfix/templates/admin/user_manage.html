@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}用户管理{% endblock %}
+
+{% block page_header %}用户管理{% endblock %}
+
+{% block content %}
+<!-- 顶部操作栏 -->
+<div class="glass-card p-3 mb-4">
+    <div class="row g-3 align-items-center">
+        <div class="col-md-4">
+            <label class="form-label text-muted fw-semibold small">角色筛选</label>
+            <select class="form-select" id="filterRole">
+                <option value="">全部角色</option>
+                <option value="student">学生</option>
+                <option value="maintainer">维修人员</option>
+                <option value="admin">管理员</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label text-muted fw-semibold small">状态筛选</label>
+            <select class="form-select" id="filterStatus">
+                <option value="">全部状态</option>
+                <option value="1">启用</option>
+                <option value="0">禁用</option>
+            </select>
+        </div>
+        <div class="col-md-4 text-md-end mt-4">
+            <button class="btn btn-primary px-4 rounded-3 glow-btn fw-semibold" onclick="openAddModal()">
+                <i class="bi bi-person-plus-fill me-1"></i>添加用户
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 用户列表 -->
+<div class="glass-card border-0 shadow-sm overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>账号</th>
+                    <th>姓名</th>
+                    <th>学号/工号</th>
+                    <th>角色</th>
+                    <th>联系电话</th>
+                    <th>状态</th>
+                    <th>创建时间</th>
+                    <th class="text-center">操作</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody">
+                <tr><td colspan="8" class="text-center py-4"><div class="spinner-border text-primary spinner-border-sm" role="status"></div> 载入中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 分页 -->
+<nav class="mt-4 d-none" id="paginationNav">
+    <ul class="pagination justify-content-center gap-2" id="paginationContainer"></ul>
+</nav>
+
+<!-- 添加用户模态框 -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-primary"><i class="bi bi-person-plus-fill me-2"></i>添加新用户</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <form id="addUserForm" novalidate>
+                    <div class="mb-3">
+                        <label for="newAccount" class="form-label fw-semibold">登录账号 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="newAccount" maxlength="50" required placeholder="如: student021">
+                    </div>
+                    <div class="mb-3">
+                        <label for="newName" class="form-label fw-semibold">姓名 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="newName" maxlength="50" required placeholder="如: 张三">
+                    </div>
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label fw-semibold">初始密码 <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="newPassword" minlength="6" maxlength="128" required placeholder="至少6位" value="123456">
+                        <small class="text-muted">默认密码 123456</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newRole" class="form-label fw-semibold">角色 <span class="text-danger">*</span></label>
+                        <select class="form-select" id="newRole" required>
+                            <option value="student">学生</option>
+                            <option value="maintainer">维修人员</option>
+                            <option value="admin">管理员</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newStaffNo" class="form-label fw-semibold">学号/工号 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="newStaffNo" maxlength="30" required placeholder="如: 2023021">
+                    </div>
+                    <div class="mb-3">
+                        <label for="newPhone" class="form-label fw-semibold">联系电话</label>
+                        <input type="text" class="form-control" id="newPhone" maxlength="20" placeholder="如: 13800000021">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary rounded-3 px-4" id="submitAddBtn">确认添加</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let addModal = null;
+    let currentPage = 1;
+    const pageSize = 20;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        addModal = new bootstrap.Modal(document.getElementById('addUserModal'));
+
+        loadUsers();
+
+        document.getElementById('filterRole').addEventListener('change', () => { currentPage = 1; loadUsers(); });
+        document.getElementById('filterStatus').addEventListener('change', () => { currentPage = 1; loadUsers(); });
+        document.getElementById('submitAddBtn').addEventListener('click', submitAddUser);
+    });
+
+    async function loadUsers() {
+        const role = document.getElementById('filterRole').value;
+        const statusVal = document.getElementById('filterStatus').value;
+        const tbody = document.getElementById('userTableBody');
+
+        let url = `/accounts/users/?page=${currentPage}&page_size=${pageSize}`;
+        if (role) url += `&role=${role}`;
+        if (statusVal !== '') url += `&status=${statusVal}`;
+
+        try {
+            const data = await api.get(url);
+            renderUserTable(data.results, tbody);
+            renderPagination(data.count);
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">加载失败: ${e.error || e.detail || '未知错误'}</td></tr>`;
+        }
+    }
+
+    function renderUserTable(users, tbody) {
+        if (!users || users.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-5">暂无用户数据</td></tr>`;
+            return;
+        }
+
+        const roleBadges = {
+            'student': 'bg-primary-subtle text-primary',
+            'maintainer': 'bg-success-subtle text-success',
+            'admin': 'bg-danger-subtle text-danger'
+        };
+
+        let html = '';
+        users.forEach(u => {
+            const roleClass = roleBadges[u.role] || 'bg-secondary';
+            const statusBadge = u.status === 1
+                ? '<span class="badge bg-success-subtle text-success">启用</span>'
+                : '<span class="badge bg-secondary-subtle text-secondary">禁用</span>';
+            const toggleBtn = u.status === 1
+                ? `<button class="btn btn-sm btn-outline-danger rounded-3" onclick="toggleStatus(${u.id}, 0)">禁用</button>`
+                : `<button class="btn btn-sm btn-outline-success rounded-3" onclick="toggleStatus(${u.id}, 1)">启用</button>`;
+
+            html += `
+                <tr>
+                    <td class="fw-semibold">${escapeHtml(u.account)}</td>
+                    <td>${escapeHtml(u.name)}</td>
+                    <td class="text-muted">${escapeHtml(u.student_or_staff_no)}</td>
+                    <td><span class="badge ${roleClass} px-2.5 py-1">${u.role_display}</span></td>
+                    <td class="text-muted">${escapeHtml(u.phone || '--')}</td>
+                    <td>${statusBadge}</td>
+                    <td class="text-muted small">${new Date(u.created_at).toLocaleDateString()}</td>
+                    <td class="text-center">${toggleBtn}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function renderPagination(totalCount) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        const nav = document.getElementById('paginationNav');
+        const container = document.getElementById('paginationContainer');
+
+        if (totalPages <= 1) {
+            nav.classList.add('d-none');
+            return;
+        }
+
+        nav.classList.remove('d-none');
+        let html = '';
+
+        html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <button class="page-link rounded-3" ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})"><i class="bi bi-chevron-left"></i></button>
+        </li>`;
+
+        for (let i = 1; i <= totalPages; i++) {
+            html += `<li class="page-item ${currentPage === i ? 'active' : ''}">
+                <button class="page-link rounded-3" onclick="changePage(${i})">${i}</button>
+            </li>`;
+        }
+
+        html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <button class="page-link rounded-3" ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})"><i class="bi bi-chevron-right"></i></button>
+        </li>`;
+
+        container.innerHTML = html;
+    }
+
+    function changePage(page) {
+        if (page < 1) return;
+        currentPage = page;
+        loadUsers();
+    }
+
+    function openAddModal() {
+        document.getElementById('addUserForm').reset();
+        document.getElementById('newPassword').value = '123456';
+        addModal.show();
+    }
+
+    async function submitAddUser() {
+        const form = document.getElementById('addUserForm');
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            return;
+        }
+
+        const payload = {
+            account: document.getElementById('newAccount').value.trim(),
+            name: document.getElementById('newName').value.trim(),
+            password: document.getElementById('newPassword').value,
+            role: document.getElementById('newRole').value,
+            student_or_staff_no: document.getElementById('newStaffNo').value.trim(),
+            phone: document.getElementById('newPhone').value.trim()
+        };
+
+        document.getElementById('submitAddBtn').disabled = true;
+        try {
+            await api.post('/accounts/users/', payload);
+            addModal.hide();
+            showToast('用户创建成功', 'success');
+            loadUsers();
+        } catch (e) {
+            const msg = e.account ? e.account.join(', ') : (e.detail || JSON.stringify(e));
+            showToast('创建失败: ' + msg, 'error');
+        } finally {
+            document.getElementById('submitAddBtn').disabled = false;
+        }
+    }
+
+    async function toggleStatus(userId, newStatus) {
+        const action = newStatus === 1 ? '启用' : '禁用';
+        if (!confirm(`确定要${action}该用户吗？`)) return;
+
+        try {
+            await api.put(`/accounts/users/${userId}/`, { status: newStatus });
+            showToast(`用户已${action}`, 'success');
+            loadUsers();
+        } catch (e) {
+            showToast('操作失败: ' + (e.error || '未知错误'), 'error');
+        }
+    }
+</script>
+{% endblock %}
