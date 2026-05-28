@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block title %}管理员控制台 - 工单管理{% endblock %}
+
+{% block page_header %}工单管理中心{% endblock %}
+
+{% block content %}
+<!-- 主面板选项卡 -->
+<div class="glass-card border-0 shadow-sm overflow-hidden mb-4">
+    <div class="card-header bg-transparent border-0 p-0">
+        <ul class="nav nav-tabs nav-justified border-secondary-subtle" id="adminTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-3 fw-bold active" id="review-tab" data-bs-toggle="tab" data-bs-target="#review-pane" type="button" role="tab" aria-controls="review-pane" aria-selected="true">
+                    <i class="bi bi-clipboard-check me-2"></i>待审核工单 <span class="badge bg-warning text-dark rounded-pill ms-1" id="reviewCount">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-3 fw-bold" id="dispatch-tab" data-bs-toggle="tab" data-bs-target="#dispatch-pane" type="button" role="tab" aria-controls="dispatch-pane" aria-selected="false">
+                    <i class="bi bi-truck-flatbed me-2"></i>待派发工单 <span class="badge bg-primary rounded-pill ms-1" id="dispatchCount">0</span>
+                </button>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="card-body p-4">
+        <div class="tab-content" id="adminTabsContent">
+            <!-- Panel 1: 待审核工单 -->
+            <div class="tab-pane fade show active" id="review-pane" role="tabpanel" aria-labelledby="review-tab" tabindex="0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border-0" id="reviewTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>单号</th>
+                                <th>报修位置</th>
+                                <th>类别</th>
+                                <th>描述</th>
+                                <th>紧急度</th>
+                                <th>提交时间</th>
+                                <th class="text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reviewTableBody">
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Panel 2: 待派单工单 -->
+            <div class="tab-pane fade" id="dispatch-pane" role="tabpanel" aria-labelledby="dispatch-tab" tabindex="0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border-0" id="dispatchTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>单号</th>
+                                <th>报修位置</th>
+                                <th>类别</th>
+                                <th>描述</th>
+                                <th>紧急度</th>
+                                <th>提交时间</th>
+                                <th class="text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dispatchTableBody">
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 审核驳回理由模态框 -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger" id="rejectModalLabel"><i class="bi bi-x-circle-fill me-2"></i>驳回报修申请</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="mb-3">
+                    <label for="rejectReason" class="form-label fw-medium text-slate-700">驳回原因 (必填)</label>
+                    <textarea class="form-control" id="rejectReason" rows="3" placeholder="例如：报修信息不实，或者是描述不清，请补充。" required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger rounded-3" id="confirmRejectBtn">确认驳回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 任务指派模态框 -->
+<div class="modal fade" id="assignModal" tabindex="-1" aria-labelledby="assignModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content glass-card border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-primary" id="assignModalLabel"><i class="bi bi-person-fill-gear me-2"></i>指派维修任务</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="text-muted small mb-3">为工单 <strong id="assignOrderNoText" class="text-slate-800">--</strong> 选择一位适合的维修师傅进行指派。请参考师傅当前的当日工作负荷。</p>
+                
+                <div class="table-responsive" style="max-height: 350px;">
+                    <table class="table table-hover align-middle border-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>姓名</th>
+                                <th>工号</th>
+                                <th>联系电话</th>
+                                <th>在岗状态</th>
+                                <th>今日负荷 (未结单)</th>
+                                <th class="text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="maintainersTableBody">
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">取消</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let rejectModalInstance = null;
+    let assignModalInstance = null;
+    let activeRejectOrderId = null;
+    let activeAssignOrderId = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        rejectModalInstance = new bootstrap.Modal(document.getElementById('rejectModal'));
+        assignModalInstance = new bootstrap.Modal(document.getElementById('assignModal'));
+
+        // 根据路由路径自动切换默认选中的标签页
+        const path = window.location.pathname;
+        if (path.includes('/admin/pending-dispatch/')) {
+            const tabEl = document.querySelector('#dispatch-tab');
+            if (tabEl) {
+                bootstrap.Tab.getOrCreateInstance(tabEl).show();
+            }
+        }
+
+        // 监听标签页切换事件以刷新对应的数据
+        document.getElementById('review-tab').addEventListener('shown.bs.tab', () => loadPendingReviews());
+        document.getElementById('dispatch-tab').addEventListener('shown.bs.tab', () => loadPendingDispatches());
+
+        // 初始加载全部计数和当前激活 Tab 的数据
+        refreshCounts();
+        if (path.includes('/admin/pending-dispatch/')) {
+            loadPendingDispatches();
+        } else {
+            loadPendingReviews();
+        }
+
+        // 绑定确认驳回事件
+        document.getElementById('confirmRejectBtn').addEventListener('click', submitReject);
+    });
+
+    // 刷新 Tab 上的红点计数
+    async function refreshCounts() {
+        try {
+            const reviewData = await api.get('/dispatch/pending-review/');
+            document.getElementById('reviewCount').textContent = reviewData.count;
+
+            const dispatchData = await api.get('/dispatch/pending-dispatch/');
+            document.getElementById('dispatchCount').textContent = dispatchData.count;
+        } catch (e) {
+            console.error('Failed to load badges count', e);
+        }
+    }
+
+    // 1. 加载待审核工单
+    async function loadPendingReviews() {
+        const body = document.getElementById('reviewTableBody');
+        body.innerHTML = `<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary spinner-border-sm" role="status"></div> 读取数据中...</td></tr>`;
+        
+        try {
+            // 调用 API 3.1：获取待审核列表
+            const data = await api.get('/dispatch/pending-review/');
+            renderTableData(data.results, body, true);
+        } catch (e) {
+            showToast('获取待审核列表失败', 'error');
+        }
+    }
+
+    // 2. 加载待派单工单
+    async function loadPendingDispatches() {
+        const body = document.getElementById('dispatchTableBody');
+        body.innerHTML = `<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary spinner-border-sm" role="status"></div> 读取数据中...</td></tr>`;
+        
+        try {
+            // 调用 API 3.4：获取待派单列表
+            const data = await api.get('/dispatch/pending-dispatch/');
+            renderTableData(data.results, body, false);
+        } catch (e) {
+            showToast('获取待派单列表失败', 'error');
+        }
+    }
+
+    // 渲染工单表格行
+    function renderTableData(orders, tbodyElement, isReviewTab) {
+        if (!orders || orders.length === 0) {
+            tbodyElement.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-5"><i class="bi bi-check-circle text-success fs-3 d-block mb-2"></i>暂无需要处理的工单</td></tr>`;
+            return;
+        }
+
+        const categoryLabels = {
+            'water_electric': '水电',
+            'door_window': '门窗',
+            'network': '网络',
+            'furniture': '家具',
+            'other': '其他'
+        };
+
+        const urgencyClasses = {
+            'normal': 'bg-secondary-subtle text-secondary',
+            'urgent': 'bg-danger-subtle text-danger'
+        };
+
+        let html = '';
+        orders.forEach(order => {
+            const urgencyText = order.urgency_level === 'urgent' ? '紧急' : '普通';
+            const urgencyClass = urgencyClasses[order.urgency_level] || 'bg-light';
+            
+            // 动作按钮
+            let actionBtnHTML = '';
+            if (isReviewTab) {
+                actionBtnHTML = `
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-sm btn-outline-danger" onclick="openRejectModal(${order.id})">
+                            <i class="bi bi-x-circle me-1"></i>驳回
+                        </button>
+                        <button class="btn btn-sm btn-success text-white" onclick="approveOrder(${order.id})">
+                            <i class="bi bi-check-circle me-1"></i>通过
+                        </button>
+                    </div>
+                `;
+            } else {
+                actionBtnHTML = `
+                    <div class="text-center">
+                        <button class="btn btn-sm btn-primary" onclick="openAssignModal(${order.id}, '${order.order_no}')">
+                            <i class="bi bi-person-fill-gear me-1"></i>指派任务
+                        </button>
+                    </div>
+                `;
+            }
+
+            html += `
+                <tr>
+                    <td class="fw-semibold small">${order.order_no}</td>
+                    <td>
+                        <span class="d-block fw-medium">${order.room.building_name}</span>
+                        <small class="text-muted">${order.room.room_no} 室</small>
+                    </td>
+                    <td><span class="badge bg-light text-slate-800 border-0 rounded px-2.5 py-1.5">${categoryLabels[order.category] || order.category_display}</span></td>
+                    <td class="text-truncate-2" style="max-width: 250px;" title="${order.description}">${order.description}</td>
+                    <td><span class="badge ${urgencyClass} px-2 py-1">${urgencyText}</span></td>
+                    <td class="text-muted small">${new Date(order.submit_time).toLocaleString()}</td>
+                    <td>${actionBtnHTML}</td>
+                </tr>
+            `;
+        });
+
+        tbodyElement.innerHTML = html;
+    }
+
+    // ==========================================
+    // 审核模块 (API 3.2, 3.3)
+    // ==========================================
+    
+    // 审核通过
+    async function approveOrder(id) {
+        if (!confirm('确认该报修属实并予以审核通过吗？')) return;
+        showLoader();
+        try {
+            // 调用 API 3.2：审核通过
+            await api.post(`/dispatch/${id}/approve/`);
+            showToast('审核通过已归入派单队列', 'success');
+            refreshCounts();
+            loadPendingReviews();
+        } catch (e) {
+            showToast(e.error || '审核失败', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+
+    // 打开驳回弹窗
+    function openRejectModal(id) {
+        activeRejectOrderId = id;
+        document.getElementById('rejectReason').value = '';
+        rejectModalInstance.show();
+    }
+
+    // 确认驳回
+    async function submitReject() {
+        const reason = document.getElementById('rejectReason').value.trim();
+        if (!reason) {
+            showToast('请写明驳回原因！', 'error');
+            return;
+        }
+
+        rejectModalInstance.hide();
+        showLoader();
+        try {
+            // 调用 API 3.3：审核驳回
+            await api.post(`/dispatch/${activeRejectOrderId}/reject/`, { reason: reason });
+            showToast('工单已驳回', 'success');
+            refreshCounts();
+            loadPendingReviews();
+        } catch (e) {
+            showToast('驳回操作失败', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+
+    // ==========================================
+    // 指派派单模块 (API 3.5, 3.6)
+    // ==========================================
+
+    // 打开指派弹窗
+    async function openAssignModal(id, orderNo) {
+        activeAssignOrderId = id;
+        document.getElementById('assignOrderNoText').textContent = orderNo;
+        
+        const tbody = document.getElementById('maintainersTableBody');
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-primary spinner-border-sm" role="status"></div> 读取在岗工人中...</td></tr>`;
+        
+        assignModalInstance.show();
+
+        try {
+            // 调用 API 3.6：获取维修人员列表
+            const maintainers = await api.get('/dispatch/maintainers/');
+            renderMaintainers(maintainers, tbody);
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">读取维修人员列表失败</td></tr>`;
+        }
+    }
+
+    // 渲染模态框中维修人员列表
+    function renderMaintainers(maintainers, tbody) {
+        if (!maintainers || maintainers.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">无在岗的维修人员信息</td></tr>`;
+            return;
+        }
+
+        let html = '';
+        maintainers.forEach(m => {
+            // 当日负荷级别染色
+            let loadClass = 'bg-success';
+            if (m.today_task_count >= 5) loadClass = 'bg-danger';
+            else if (m.today_task_count >= 3) loadClass = 'bg-warning text-dark';
+
+            html += `
+                <tr>
+                    <td class="fw-bold">${m.name}</td>
+                    <td class="small text-muted">${m.student_or_staff_no}</td>
+                    <td>${m.phone}</td>
+                    <td><span class="badge bg-success-subtle text-success">${m.status}</span></td>
+                    <td><span class="badge ${loadClass} px-2 py-1">${m.today_task_count} 单</span></td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-primary px-3 rounded-pill" onclick="assignTask(${m.id})">
+                            指派给TA
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    // 指派任务给具体人员
+    async function assignTask(maintainerId) {
+        assignModalInstance.hide();
+        showLoader();
+
+        try {
+            // 调用 API 3.5：派发任务
+            await api.post(`/dispatch/${activeAssignOrderId}/assign/`, {
+                maintainer_id: maintainerId
+            });
+            showToast('任务指派成功！', 'success');
+            refreshCounts();
+            loadPendingDispatches();
+        } catch (e) {
+            // 处理饱和限制阻断
+            showToast(e.error || '任务指派失败', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+</script>
+{% endblock %}

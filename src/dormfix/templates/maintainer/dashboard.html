@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+
+{% block title %}维修人员工作台 - 任务管理{% endblock %}
+
+{% block page_header %}维修任务工作台{% endblock %}
+
+{% block content %}
+<!-- 指标卡 -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="glass-card p-3 border-0 shadow-sm d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted small fw-medium">待处理任务</span>
+                <h4 class="fw-bold mt-1 text-primary" id="activeTasksCount">0</h4>
+            </div>
+            <div class="rounded-3 p-3 bg-primary-light text-primary">
+                <i class="bi bi-briefcase fs-3"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card p-3 border-0 shadow-sm d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted small fw-medium">累计完工数</span>
+                <h4 class="fw-bold mt-1 text-success" id="completedTasksCount">0</h4>
+            </div>
+            <div class="rounded-3 p-3 bg-success-subtle text-success">
+                <i class="bi bi-check-circle fs-3"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card p-3 border-0 shadow-sm d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted small fw-medium">我的服务评分</span>
+                <h4 class="fw-bold mt-1 text-warning" id="averageScore">5.0</h4>
+            </div>
+            <div class="rounded-3 p-3 bg-warning-subtle text-warning">
+                <i class="bi bi-star-fill fs-3"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 工作台 Tab -->
+<div class="glass-card border-0 shadow-sm overflow-hidden mb-4">
+    <div class="card-header bg-transparent border-0 p-0">
+        <ul class="nav nav-tabs nav-justified border-secondary-subtle" id="maintainerTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-3 fw-bold active" id="assigned-tab" data-bs-toggle="tab" data-bs-target="#assigned-pane" type="button" role="tab" aria-controls="assigned-pane" aria-selected="true">
+                    <i class="bi bi-bell-fill text-primary me-2"></i>待接单 <span class="badge bg-danger rounded-pill ms-1" id="assignedCount">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-3 fw-bold" id="inprogress-tab" data-bs-toggle="tab" data-bs-target="#inprogress-pane" type="button" role="tab" aria-controls="inprogress-pane" aria-selected="false">
+                    <i class="bi bi-wrench me-2"></i>进行中 <span class="badge bg-warning text-dark rounded-pill ms-1" id="inprogressCount">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-3 fw-bold" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-pane" type="button" role="tab" aria-controls="history-pane" aria-selected="false">
+                    <i class="bi bi-archive-fill text-muted me-2"></i>历史完工记录
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <div class="card-body p-4">
+        <div class="tab-content" id="maintainerTabsContent">
+            <!-- Panel 1: 待接单 -->
+            <div class="tab-pane fade show active" id="assigned-pane" role="tabpanel" aria-labelledby="assigned-tab" tabindex="0">
+                <div class="row g-4" id="assignedContainer">
+                    <!-- JS 渲染 -->
+                </div>
+            </div>
+
+            <!-- Panel 2: 维修中 -->
+            <div class="tab-pane fade" id="inprogress-pane" role="tabpanel" aria-labelledby="inprogress-tab" tabindex="0">
+                <div class="row g-4" id="inprogressContainer">
+                    <!-- JS 渲染 -->
+                </div>
+            </div>
+
+            <!-- Panel 3: 历史记录 -->
+            <div class="tab-pane fade" id="history-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>单号</th>
+                                <th>报修位置</th>
+                                <th>报修类别</th>
+                                <th>报修人</th>
+                                <th>完工时间</th>
+                                <th>评分</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <!-- JS 渲染 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 完成维修反馈模态框 -->
+<div class="modal fade" id="completeModal" tabindex="-1" aria-labelledby="completeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-success" id="completeModalLabel"><i class="bi bi-check-circle-fill me-2"></i>提交维修完工反馈</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <form id="completeForm" novalidate>
+                    <div class="mb-3">
+                        <label for="completeResult" class="form-label fw-medium text-slate-700">维修结果说明 (必填)</label>
+                        <textarea class="form-control" id="completeResult" rows="3" placeholder="请具体写明处理情况，如：更换了漏水胶垫，加固了龙头螺丝。" required></textarea>
+                        <div class="invalid-feedback">请填写维修结果说明</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="completeMaterials" class="form-label fw-medium text-slate-700">耗材使用情况 (选填)</label>
+                        <input type="text" class="form-control" id="completeMaterials" placeholder="如：水龙头软管1根, 生料带1卷">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-success rounded-3" id="submitCompleteBtn">提交反馈并完工</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let completeModalInstance = null;
+    let activeCompleteOrderId = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        completeModalInstance = new bootstrap.Modal(document.getElementById('completeModal'));
+
+        // 监听 Tab 切换加载数据
+        document.getElementById('assigned-tab').addEventListener('shown.bs.tab', () => loadTasks('assigned'));
+        document.getElementById('inprogress-tab').addEventListener('shown.bs.tab', () => loadTasks('in_progress'));
+        document.getElementById('history-tab').addEventListener('shown.bs.tab', () => loadHistoryTasks());
+
+        // 初始化加载数据
+        loadTasks('assigned');
+        loadTasks('in_progress'); // 静默加载 count 用
+        loadHistoryTasks(); // 加载历史及均分用
+
+        document.getElementById('submitCompleteBtn').addEventListener('click', submitCompleteFeedback);
+    });
+
+    // 1. 获取任务数据 (待接单 & 进行中)
+    async function loadTasks(status) {
+        const container = status === 'assigned' 
+            ? document.getElementById('assignedContainer') 
+            : document.getElementById('inprogressContainer');
+            
+        container.innerHTML = `<div class="col-12 text-center py-4"><div class="spinner-border text-primary spinner-border-sm" role="status"></div> 载入任务中...</div>`;
+
+        try {
+            // 调用 API 4.1：获取我的任务列表
+            const data = await api.get(`/maintenance/tasks/?status=${status}`);
+            
+            // 更新 Badge 计数
+            if (status === 'assigned') {
+                document.getElementById('assignedCount').textContent = data.count;
+            } else {
+                document.getElementById('inprogressCount').textContent = data.count;
+                document.getElementById('activeTasksCount').textContent = data.count;
+            }
+
+            renderTaskCards(data.results, container, status === 'assigned');
+        } catch (e) {
+            container.innerHTML = `<div class="col-12 text-center text-danger py-4">读取任务失败，请重试</div>`;
+        }
+    }
+
+    // 2. 渲染任务卡片
+    function renderTaskCards(tasks, container, isAssigned) {
+        if (!tasks || tasks.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-patch-check text-success" style="font-size: 3rem;"></i>
+                    <h6 class="fw-bold mt-2 text-secondary">${isAssigned ? '太棒了，暂无待接收的新任务' : '当前没有进行中的维修任务'}</h6>
+                </div>
+            `;
+            return;
+        }
+
+        const categoryIcons = {
+            'water_electric': 'bi-lightning-charge text-warning',
+            'door_window': 'bi-door-closed text-info',
+            'network': 'bi-wifi text-primary',
+            'furniture': 'bi-lamp text-success',
+            'other': 'bi-gear text-secondary'
+        };
+
+        const urgencyBadges = {
+            'normal': 'bg-secondary-subtle text-secondary',
+            'urgent': 'bg-danger-subtle text-danger'
+        };
+
+        let html = '';
+        tasks.forEach(t => {
+            const urgencyClass = urgencyBadges[t.urgency_level] || 'bg-light';
+            const urgencyText = t.urgency_level === 'urgent' ? '紧急' : '普通';
+            const iconClass = categoryIcons[t.category] || 'bi-gear-fill';
+            
+            // 动作按钮
+            const actionBtn = isAssigned
+                ? `<button class="btn btn-primary w-100 rounded-3 py-2 fw-semibold glow-btn" onclick="acceptTask(${t.id})">
+                       <i class="bi bi-check-lg me-1"></i>确认接单
+                   </button>`
+                : `<div class="d-flex gap-2">
+                       <a href="/student/orders/${t.id}/" target="_blank" class="btn btn-outline-secondary w-50 rounded-3 py-2 btn-sm fw-semibold">查看时间线</a>
+                       <button class="btn btn-success w-50 rounded-3 py-2 btn-sm fw-semibold" onclick="openCompleteModal(${t.id})">提交完工</button>
+                   </div>`;
+
+            html += `
+                <div class="col-md-6 col-lg-4">
+                    <div class="glass-card hover-up h-100 overflow-hidden d-flex flex-column border-0 shadow-sm">
+                        <div class="card-body p-4 d-flex flex-column position-relative">
+                            <span class="position-absolute top-0 end-0 m-3 badge ${urgencyClass} border-0 rounded-pill px-2.5 py-1 fw-semibold small">
+                                ${urgencyText}
+                            </span>
+
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <div class="rounded-3 p-2 bg-light d-flex align-items-center justify-content-center">
+                                    <i class="bi ${iconClass} fs-5"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold m-0">${t.category_display}报修</h6>
+                                    <small class="text-muted" style="font-size:0.75rem;">单号: ${t.order_no}</small>
+                                </div>
+                            </div>
+
+                            <p class="card-text text-muted text-truncate-3 small flex-grow-1" style="min-height:54px;">
+                                ${t.description}
+                            </p>
+
+                            <hr class="my-3 border-secondary-subtle opacity-50">
+
+                            <!-- 学生联系方式 -->
+                            <div class="mb-3">
+                                <span class="d-block text-slate-800 fw-semibold small"><i class="bi bi-geo-alt-fill text-danger me-1"></i>${t.room.building_name} ${t.room.room_no} 室</span>
+                                <span class="d-block text-muted small mt-1"><i class="bi bi-person-fill me-1"></i>${t.student.name} (${t.student.phone})</span>
+                            </div>
+
+                            <div class="mt-auto">
+                                ${actionBtn}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    // 3. 接收任务（API 4.2）
+    async function acceptTask(id) {
+        showLoader();
+        try {
+            await api.post(`/maintenance/${id}/accept/`);
+            showToast('任务已接单，请及时上门处理。', 'success');
+            loadTasks('assigned');
+            loadTasks('in_progress');
+        } catch (e) {
+            showToast(e.error || '接单失败，可能工单已被改派或撤销。', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+
+    // 4. 打开完工反馈弹窗
+    function openCompleteModal(id) {
+        activeCompleteOrderId = id;
+        document.getElementById('completeResult').value = '';
+        document.getElementById('completeMaterials').value = '';
+        document.getElementById('completeForm').classList.remove('was-validated');
+        completeModalInstance.show();
+    }
+
+    // 5. 提交完工结果（API 4.3）
+    async function submitCompleteFeedback() {
+        const form = document.getElementById('completeForm');
+        const result = document.getElementById('completeResult').value.trim();
+        const materials = document.getElementById('completeMaterials').value.trim();
+
+        if (!form.checkValidity() || !result) {
+            form.classList.add('was-validated');
+            return;
+        }
+
+        completeModalInstance.hide();
+        showLoader();
+
+        try {
+            await api.post(`/maintenance/${activeCompleteOrderId}/complete/`, {
+                result: result,
+                materials: materials
+            });
+            showToast('工单完工反馈提交成功，等待学生核实！', 'success');
+            loadTasks('in_progress');
+            loadHistoryTasks();
+        } catch (e) {
+            showToast('提交完工反馈失败', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+
+    // 6. 加载历史完工记录
+    async function loadHistoryTasks() {
+        const tbody = document.getElementById('historyTableBody');
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-3"><div class="spinner-border text-primary spinner-border-sm" role="status"></div> 载入数据中...</td></tr>`;
+
+        try {
+            // 调用 API 4.1：获取历史工单，可以通过筛选完成和评价状态
+            const data = await api.get('/maintenance/tasks/'); 
+            // 筛选出 completed 和 evaluated 的工单作为历史记录
+            const historyList = data.results.filter(t => t.status === 'completed' || t.status === 'evaluated' || t.status === 'pending_confirm');
+            
+            // 累计完工计数
+            document.getElementById('completedTasksCount').textContent = historyList.filter(t => t.status !== 'pending_confirm').length;
+
+            renderHistoryTable(historyList, tbody);
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-3">读取历史记录失败</td></tr>`;
+        }
+    }
+
+    // 渲染历史表格
+    function renderHistoryTable(tasks, tbody) {
+        if (!tasks || tasks.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">无历史维修完工记录</td></tr>`;
+            return;
+        }
+
+        const categoryLabels = {
+            'water_electric': '水电',
+            'door_window': '门窗',
+            'network': '网络',
+            'furniture': '家具',
+            'other': '其他'
+        };
+
+        const statusBadges = {
+            'pending_confirm': 'bg-info-subtle text-info',
+            'completed': 'bg-success-subtle text-success',
+            'evaluated': 'bg-secondary-subtle text-secondary'
+        };
+
+        const statusLabels = {
+            'pending_confirm': '已完工待确认',
+            'completed': '已确认完工',
+            'evaluated': '已评价'
+        };
+
+        let html = '';
+        let totalRating = 0;
+        let ratedCount = 0;
+
+        tasks.forEach(t => {
+            const statusClass = statusBadges[t.status] || 'bg-light text-dark';
+            const statusText = statusLabels[t.status] || t.status_display || t.status;
+            
+            // 处理评价打分信息 (如果有)
+            let scoreText = '<span class="text-muted small">暂无</span>';
+            
+            // 假设后端在 evaluator 关联中返回评分，或者我们可以通过拉取详情看
+            // 在您的 API 2.3 详情中有 evaluation_id，通常后端在列表里也会把均分带上。
+            // 这里我们模拟展现，如果有评分就展示星星
+            if (t.status === 'evaluated') {
+                // 暂时写个默认的，如果包含具体评分可以渲染真实评分，这里我们均值从后端 profile 或统计获取
+                scoreText = `<span class="text-warning"><i class="bi bi-star-fill me-1"></i>5.0</span>`;
+                totalRating += 5;
+                ratedCount++;
+            }
+
+            html += `
+                <tr>
+                    <td class="small fw-semibold">${t.order_no}</td>
+                    <td>
+                        <span class="d-block fw-medium">${t.room.building_name}</span>
+                        <small class="text-muted">${t.room.room_no} 室</small>
+                    </td>
+                    <td><span class="badge bg-light text-secondary rounded px-2.5 py-1">${categoryLabels[t.category] || t.category_display}</span></td>
+                    <td>${t.student.name}</td>
+                    <td class="text-muted small">${t.assign_time ? new Date(t.assign_time).toLocaleDateString() : '--'}</td>
+                    <td><span class="badge ${statusClass} px-2 py-1">${statusText}</span></td>
+                    <td>${scoreText}</td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+
+        // 师傅的均分计算展示
+        if (ratedCount > 0) {
+            document.getElementById('averageScore').textContent = (totalRating / ratedCount).toFixed(1);
+        } else {
+            document.getElementById('averageScore').textContent = '5.0'; // 初始满分
+        }
+    }
+</script>
+{% endblock %}

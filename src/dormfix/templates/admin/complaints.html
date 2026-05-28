@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}管理员控制台 - 投诉处理中心{% endblock %}
+
+{% block page_header %}投诉处理中心{% endblock %}
+
+{% block content %}
+<!-- 主面板 -->
+<div class="glass-card border-0 shadow-sm p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h5 class="fw-bold m-0 text-slate-800">学生服务投诉列表</h5>
+            <p class="text-muted small m-0 mt-1">处理学生反馈的维修质量或服务态度相关的投诉单，确保后勤服务满意度。</p>
+        </div>
+        <div>
+            <select class="form-select form-select-sm rounded-3" id="filterStatus">
+                <option value="">全部投诉</option>
+                <option value="pending">待处理</option>
+                <option value="processing">处理中</option>
+                <option value="resolved">已处理</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 投诉数据表格 -->
+    <div class="table-responsive">
+        <table class="table table-hover align-middle border-0" id="complaintsTable">
+            <thead class="table-light">
+                <tr>
+                    <th>投诉编号</th>
+                    <th>关联工单号</th>
+                    <th>投诉人</th>
+                    <th>类别</th>
+                    <th>投诉详情</th>
+                    <th>状态</th>
+                    <th>提交时间</th>
+                    <th>处理结果</th>
+                    <th class="text-center">操作</th>
+                </tr>
+            </thead>
+            <tbody id="complaintsTableBody">
+                <tr>
+                    <td colspan="9" class="text-center py-4">
+                        <div class="spinner-border text-primary spinner-border-sm" role="status"></div> 读取投诉列表中...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 处理投诉模态框 -->
+<div class="modal fade" id="processModal" tabindex="-1" aria-labelledby="processModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-primary" id="processModalLabel"><i class="bi bi-pencil-square me-2"></i>处理投诉单</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="mb-3">
+                    <label for="processStatus" class="form-label fw-medium text-slate-700">处理动作</label>
+                    <select class="form-select" id="processStatus" required>
+                        <option value="resolved" selected>已解决并关闭投诉</option>
+                        <option value="processing">标记为处理中</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="processResult" class="form-label fw-medium text-slate-700">处理意见/回复 (必填)</label>
+                    <textarea class="form-control" id="processResult" rows="4" placeholder="写明具体调查情况和解决方案。例如：已对相关维修师傅进行批评教育，并已重新指派专业组长上门返修完毕。" required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary rounded-3" id="confirmProcessBtn">提交处理结果</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let processModalInstance = null;
+    let activeComplaintId = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        processModalInstance = new bootstrap.Modal(document.getElementById('processModal'));
+        loadComplaints();
+
+        document.getElementById('filterStatus').addEventListener('change', loadComplaints);
+        document.getElementById('confirmProcessBtn').addEventListener('click', submitProcess);
+    });
+
+    // 1. 加载投诉数据
+    async function loadComplaints() {
+        const status = document.getElementById('filterStatus').value;
+        const tbody = document.getElementById('complaintsTableBody');
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4"><div class="spinner-border text-primary spinner-border-sm" role="status"></div> 读取数据中...</td></tr>`;
+
+        let url = '/feedback/complaints/';
+        if (status) url += `?status=${status}`;
+
+        try {
+            // 调用 API 5.3：获取投诉列表
+            const data = await api.get(url);
+            renderComplaints(data.results, tbody);
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">加载投诉列表失败</td></tr>`;
+            showToast('获取投诉列表失败', 'error');
+        }
+    }
+
+    // 2. 渲染投诉表格
+    function renderComplaints(complaints, tbody) {
+        if (!complaints || complaints.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-5"><i class="bi bi-chat-square-check text-success fs-3 d-block mb-2"></i>当前无任何投诉订单</td></tr>`;
+            return;
+        }
+
+        const typeLabels = {
+            'quality': '维修质量',
+            'attitude': '服务态度',
+            'other': '其他'
+        };
+
+        const statusBadges = {
+            'pending': 'bg-danger-subtle text-danger',
+            'processing': 'bg-warning-subtle text-warning',
+            'resolved': 'bg-success-subtle text-success'
+        };
+
+        const statusLabels = {
+            'pending': '待处理',
+            'processing': '处理中',
+            'resolved': '已处理'
+        };
+
+        let html = '';
+        complaints.forEach(c => {
+            const statusClass = statusBadges[c.status] || 'bg-light text-dark';
+            const statusText = statusLabels[c.status] || c.status_display || c.status;
+            
+            // 操作按钮只针对未解决的显示
+            const actionBtn = c.status !== 'resolved'
+                ? `<button class="btn btn-sm btn-primary px-3 rounded-pill" onclick="openProcessModal(${c.id})">处理</button>`
+                : `<span class="text-muted small">--</span>`;
+
+            html += `
+                <tr>
+                    <td class="fw-semibold">#CP-${c.id}</td>
+                    <td class="small text-muted"><a href="/student/orders/${c.work_order.id}/" target="_blank">${c.work_order.order_no}</a></td>
+                    <td><strong class="text-slate-800">${c.student.name}</strong></td>
+                    <td><span class="badge bg-light text-secondary rounded px-2.5 py-1.5">${typeLabels[c.type] || c.type_display}</span></td>
+                    <td class="text-truncate-2" style="max-width: 220px;" title="${c.content}">${c.content}</td>
+                    <td><span class="badge ${statusClass} px-2 py-1">${statusText}</span></td>
+                    <td class="text-muted small">${new Date(c.created_at).toLocaleString()}</td>
+                    <td class="text-slate-600 text-truncate-2" style="max-width: 200px;" title="${c.process_result || ''}">${c.process_result || '<span class="text-muted italic small">未处理</span>'}</td>
+                    <td class="text-center">${actionBtn}</td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    // 3. 打开处理弹窗
+    function openProcessModal(id) {
+        activeComplaintId = id;
+        document.getElementById('processResult').value = '';
+        document.getElementById('processStatus').value = 'resolved';
+        processModalInstance.show();
+    }
+
+    // 4. 提交处理结果
+    async function submitProcess() {
+        const result = document.getElementById('processResult').value.trim();
+        const status = document.getElementById('processStatus').value;
+
+        if (!result) {
+            showToast('请填写具体的处理回复意见！', 'error');
+            return;
+        }
+
+        processModalInstance.hide();
+        showLoader();
+
+        try {
+            // 调用 API 5.4：处理投诉
+            await api.post(`/feedback/complaints/${activeComplaintId}/process/`, {
+                result: result,
+                status: status
+            });
+            showToast('投诉单处理结果已提交并记录', 'success');
+            loadComplaints();
+        } catch (e) {
+            showToast('提交处理结果失败', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+</script>
+{% endblock %}

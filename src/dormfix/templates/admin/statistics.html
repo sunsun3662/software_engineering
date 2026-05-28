@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+
+{% block title %}管理员控制台 - 报表与决策统计{% endblock %}
+
+{% block page_header %}数据统计与报表{% endblock %}
+
+{% block content %}
+<!-- 筛选工具栏 -->
+<div class="glass-card p-3 mb-4 border-0 shadow-sm">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label text-muted fw-semibold small">开始日期</label>
+            <input type="date" class="form-control" id="startDate">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label text-muted fw-semibold small">结束日期</label>
+            <input type="date" class="form-control" id="endDate">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label text-muted fw-semibold small">筛选楼栋</label>
+            <select class="form-select" id="buildingSelect">
+                <option value="">全部楼栋</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label text-muted fw-semibold small">报修类别</label>
+            <select class="form-select" id="categorySelect">
+                <option value="">全部类别</option>
+                <option value="water_electric">水电</option>
+                <option value="door_window">门窗</option>
+                <option value="network">网络</option>
+                <option value="furniture">家具</option>
+                <option value="other">其他</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button class="btn btn-outline-primary w-100 rounded-3" id="resetFilters">
+                <i class="bi bi-arrow-clockwise"></i> 重置
+            </button>
+            <button class="btn btn-primary w-100 rounded-3 glow-btn" id="exportBtn">
+                <i class="bi bi-file-earmark-excel"></i> 导出
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 统计小指标卡片 (Summary Widget) -->
+<div class="row g-3 mb-4" id="summaryWidgetContainer">
+    <div class="col-6 col-lg-2">
+        <div class="glass-card p-3 border-0 shadow-sm text-center h-100">
+            <span class="text-muted small fw-medium d-block">总报修工单</span>
+            <h3 class="fw-bold mt-2 text-primary" id="totalOrders">0</h3>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="glass-card p-3 border-0 shadow-sm text-center h-100">
+            <span class="text-muted small fw-medium d-block">已完工工单</span>
+            <h3 class="fw-bold mt-2 text-success" id="completedOrders">0</h3>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="glass-card p-3 border-0 shadow-sm text-center h-100">
+            <span class="text-muted small fw-medium d-block">任务完工率</span>
+            <h3 class="fw-bold mt-2 text-info" id="completionRate">0%</h3>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="glass-card p-3 border-0 shadow-sm text-center h-100">
+            <span class="text-muted small fw-medium d-block">平均响应(小时)</span>
+            <h3 class="fw-bold mt-2 text-warning" id="avgResponse">0.0</h3>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="glass-card p-3 border-0 shadow-sm text-center h-100">
+            <span class="text-muted small fw-medium d-block">平均结单(小时)</span>
+            <h3 class="fw-bold mt-2 text-slate-800" id="avgCompletion">0.0</h3>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="glass-card p-3 border-0 shadow-sm text-center h-100">
+            <span class="text-muted small fw-medium d-block">紧急工单</span>
+            <h3 class="fw-bold mt-2 text-danger" id="urgentOrders">0</h3>
+        </div>
+    </div>
+</div>
+
+<!-- 数据可视化图表层 -->
+<div class="row g-4 mb-4">
+    <!-- 每日报修趋势折线图 -->
+    <div class="col-lg-8">
+        <div class="glass-card p-4 border-0 shadow-sm h-100">
+            <h6 class="fw-bold text-slate-800 mb-3"><i class="bi bi-graph-up me-2 text-primary"></i>每日报修趋势图</h6>
+            <div style="height: 320px;">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- 报修类别占比饼图 -->
+    <div class="col-lg-4">
+        <div class="glass-card p-4 border-0 shadow-sm h-100">
+            <h6 class="fw-bold text-slate-800 mb-3"><i class="bi bi-pie-chart-fill me-2 text-primary"></i>报修类别占比</h6>
+            <div style="height: 320px;" class="d-flex align-items-center justify-content-center">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- 工单状态分布柱状图 -->
+    <div class="col-md-6 col-lg-4">
+        <div class="glass-card p-4 border-0 shadow-sm h-100">
+            <h6 class="fw-bold text-slate-800 mb-3"><i class="bi bi-activity me-2 text-primary"></i>工单状态分布</h6>
+            <div style="height: 280px;">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- 满意度评分分布条形图 -->
+    <div class="col-md-6 col-lg-4">
+        <div class="glass-card p-4 border-0 shadow-sm h-100">
+            <h6 class="fw-bold text-slate-800 mb-3"><i class="bi bi-star-half me-2 text-primary"></i>服务满意度星级分布</h6>
+            <div style="height: 280px;">
+                <canvas id="satisfactionChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- 维修人员绩效排行表 -->
+    <div class="col-12 col-lg-4">
+        <div class="glass-card p-4 border-0 shadow-sm h-100">
+            <h6 class="fw-bold text-slate-800 mb-3"><i class="bi bi-award-fill me-2 text-primary"></i>维修师傅绩效排行榜</h6>
+            <div class="table-responsive" style="max-height: 280px;">
+                <table class="table table-sm table-hover align-middle border-0 small m-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>师傅</th>
+                            <th class="text-center">完工量</th>
+                            <th class="text-center">均工时</th>
+                            <th class="text-center">均评分</th>
+                        </tr>
+                    </thead>
+                    <tbody id="performanceTableBody">
+                        <!-- JS 注入 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- 引入 Chart.js 库 -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // 缓存 Chart 实例以便刷新时销毁重建，避免图形重叠 Bug
+    let trendChartInstance = null;
+    let categoryChartInstance = null;
+    let statusChartInstance = null;
+    let satisfactionChartInstance = null;
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        // 1. 初始化楼栋筛选数据
+        try {
+            const buildings = await api.get('/accounts/buildings/');
+            const bSelect = document.getElementById('buildingSelect');
+            buildings.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b.id;
+                opt.textContent = b.building_name;
+                bSelect.appendChild(opt);
+            });
+        } catch (e) {
+            console.error('Failed to load buildings list', e);
+        }
+
+        // 2. 加载核心图表数据
+        loadStatistics();
+
+        // 3. 筛选条件变更重新拉取数据
+        document.getElementById('startDate').addEventListener('change', loadStatistics);
+        document.getElementById('endDate').addEventListener('change', loadStatistics);
+        document.getElementById('buildingSelect').addEventListener('change', loadStatistics);
+        document.getElementById('categorySelect').addEventListener('change', loadStatistics);
+
+        // 重置筛选
+        document.getElementById('resetFilters').addEventListener('click', () => {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('buildingSelect').value = '';
+            document.getElementById('categorySelect').value = '';
+            loadStatistics();
+        });
+
+        // 4. 导出 Excel 事件绑定
+        document.getElementById('exportBtn').addEventListener('click', exportExcelReport);
+    });
+
+    // 拼装当前的筛选 query params
+    function getFilterParams() {
+        const start = document.getElementById('startDate').value;
+        const end = document.getElementById('endDate').value;
+        const building = document.getElementById('buildingSelect').value;
+        const category = document.getElementById('categorySelect').value;
+        
+        let params = [];
+        if (start) params.push(`start_date=${start}`);
+        if (end) params.push(`end_date=${end}`);
+        if (building) params.push(`building=${building}`);
+        if (category) params.push(`category=${category}`);
+        
+        return params.length > 0 ? '?' + params.join('&') : '';
+    }
+
+    // 核心拉取接口数据并渲染
+    async function loadStatistics() {
+        showLoader();
+        const params = getFilterParams();
+
+        try {
+            // 调用 API 6.1：获取统计数据
+            const data = await api.get(`/dashboard/statistics/${params}`);
+            
+            // A. 渲染核心小指标
+            document.getElementById('totalOrders').textContent = data.summary.total_orders;
+            document.getElementById('completedOrders').textContent = data.summary.completed_orders;
+            document.getElementById('completionRate').textContent = `${data.summary.completion_rate.toFixed(1)}%`;
+            document.getElementById('avgResponse').textContent = data.summary.avg_response_hours.toFixed(1);
+            document.getElementById('avgCompletion').textContent = data.summary.avg_completion_hours.toFixed(1);
+            document.getElementById('urgentOrders').textContent = data.summary.urgent_orders;
+
+            // B. 渲染图表
+            renderTrendChart(data.daily_trend);
+            renderCategoryChart(data.category_distribution);
+            renderStatusChart(data.status_distribution);
+            renderSatisfactionChart(data.satisfaction_distribution);
+
+            // C. 渲染师傅绩效排行榜
+            renderPerformanceTable(data.maintainer_performance);
+
+        } catch (e) {
+            showToast('获取统计数据失败，请重试', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+
+    // 渲染折线图 (趋势图)
+    function renderTrendChart(trendData) {
+        if (trendChartInstance) trendChartInstance.destroy();
+        
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        const labels = trendData.map(d => d.date);
+        const values = trendData.map(d => d.count);
+
+        trendChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '每日报修量',
+                    data: values,
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    }
+
+    // 渲染饼图 (分类占比)
+    function renderCategoryChart(catData) {
+        if (categoryChartInstance) categoryChartInstance.destroy();
+        
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        
+        const categoryMap = {
+            'water_electric': '水电',
+            'door_window': '门窗',
+            'network': '网络',
+            'furniture': '家具',
+            'other': '其他'
+        };
+
+        const labels = catData.map(d => categoryMap[d.category] || d.category);
+        const values = catData.map(d => d.count);
+
+        categoryChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: [
+                        '#fbbf24', // 水电-黄
+                        '#22d3ee', // 门窗-青
+                        '#3b82f6', // 网络-蓝
+                        '#34d399', // 家具-绿
+                        '#94a3b8'  // 其他-灰
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12 } }
+                }
+            }
+        });
+    }
+
+    // 渲染状态分布柱状图
+    function renderStatusChart(statusData) {
+        if (statusChartInstance) statusChartInstance.destroy();
+        
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        
+        const statusMap = {
+            'pending_review': '待审核',
+            'pending_dispatch': '待派单',
+            'assigned': '已派单',
+            'in_progress': '处理中',
+            'pending_confirm': '待确认',
+            'completed': '已完成',
+            'evaluated': '已评价',
+            'rejected': '已驳回',
+            'cancelled': '已撤销'
+        };
+
+        const labels = statusData.map(d => statusMap[d.status] || d.status);
+        const values = statusData.map(d => d.count);
+
+        statusChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: 'rgba(59, 130, 246, 0.75)',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    }
+
+    // 渲染满意度星级分布条形图
+    function renderSatisfactionChart(scoreData) {
+        if (satisfactionChartInstance) satisfactionChartInstance.destroy();
+        
+        const ctx = document.getElementById('satisfactionChart').getContext('2d');
+        // 按 1-5 星进行倒序排列，高星在上方
+        const sortedData = [...scoreData].sort((a,b) => b.score - a.score);
+        
+        const labels = sortedData.map(d => `${d.score} 星`);
+        const values = sortedData.map(d => d.count);
+
+        satisfactionChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: '#fbbf24',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y', // 水平条形图
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    }
+
+    // 渲染师傅绩效排行榜
+    function renderPerformanceTable(perfData) {
+        const tbody = document.getElementById('performanceTableBody');
+        if (!perfData || perfData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">暂无师傅绩效数据</td></tr>`;
+            return;
+        }
+
+        let html = '';
+        perfData.forEach(p => {
+            html += `
+                <tr>
+                    <td class="fw-bold text-slate-700">${p.maintainer}</td>
+                    <td class="text-center"><span class="badge bg-light text-slate-800">${p.completed_count} 单</span></td>
+                    <td class="text-center text-slate-600">${p.avg_hours.toFixed(1)}h</td>
+                    <td class="text-center text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>${p.avg_score.toFixed(1)}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    // 导出 Excel 报表二进制文件接口
+    async function exportExcelReport() {
+        showLoader();
+        const params = getFilterParams();
+        
+        try {
+            // 调用 API 6.2：导出报表。此时 api.js 会返回 Blob 二进制负载
+            const blob = await api.get(`/dashboard/export/${params}`, {
+                headers: {
+                    'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                }
+            });
+
+            // 在前端利用 URL.createObjectURL 进行文件流保存并模拟点击下载
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = downloadUrl;
+            a.download = `DormFix_报修统计报表_${new Date().toLocaleDateString()}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            
+            // 清理文件资源
+            window.URL.revokeObjectURL(downloadUrl);
+            document.body.removeChild(a);
+            showToast('报表导出成功，开始下载。', 'success');
+
+        } catch (e) {
+            showToast('导出报表失败，服务器异常。', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
+</script>
+{% endblock %}
