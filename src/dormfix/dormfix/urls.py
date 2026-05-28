@@ -2,10 +2,11 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, RedirectView
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # 根路径自动跳转到登录页
+    path('', RedirectView.as_view(url='/login/', permanent=False)),
     
     # 后端 API 路由
     path('api/accounts/', include('accounts.urls')),
@@ -26,7 +27,7 @@ urlpatterns = [
     path('student/evaluate/<int:id>/', TemplateView.as_view(template_name='student/evaluate.html')),
     path('student/complaint/<int:id>/', TemplateView.as_view(template_name='student/complaint.html')),
     
-    # 管理员端页面
+    # 管理员端页面 (必须放在 path('admin/', admin.site.urls) 之前，防止被 Django Admin 的 catch_all_view 拦截)
     path('admin/pending-review/', TemplateView.as_view(template_name='admin/dashboard.html')),
     path('admin/pending-dispatch/', TemplateView.as_view(template_name='admin/dashboard.html')),
     path('admin/complaints/', TemplateView.as_view(template_name='admin/complaints.html')),
@@ -34,6 +35,9 @@ urlpatterns = [
     
     # 维修员端页面
     path('maintainer/tasks/', TemplateView.as_view(template_name='maintainer/dashboard.html')),
+    
+    # 默认 Django 后台管理系统 (放在最后作为后备匹配)
+    path('admin/', admin.site.urls),
 ]
 
 if settings.DEBUG:
