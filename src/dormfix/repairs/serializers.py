@@ -16,13 +16,17 @@ class WorkOrderListSerializer(serializers.ModelSerializer):
     category_display = serializers.CharField(source='get_category_display', read_only=True)
     urgency_level_display = serializers.CharField(source='get_urgency_level_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    student = serializers.SerializerMethodField()
     room = serializers.SerializerMethodField()
 
     class Meta:
         model = WorkOrder
         fields = ['id', 'order_no', 'category', 'category_display', 'description',
                   'urgency_level', 'urgency_level_display', 'status', 'status_display',
-                  'submit_time', 'room']
+                  'submit_time', 'student', 'room']
+
+    def get_student(self, obj):
+        return {'name': obj.student.name, 'phone': obj.student.phone}
 
     def get_room(self, obj):
         return {

@@ -108,7 +108,22 @@
     
     <!-- API 异步交互工具类 -->
     <script src="/static/js/api.js"></script>
-    
+
+    <!-- 全局状态映射 -->
+    <script>
+        const STATUS_MAP = {
+            'pending_review': { text: '待审核', class: 'bg-warning text-dark' },
+            'pending_dispatch': { text: '待派单', class: 'bg-info text-white' },
+            'assigned': { text: '已派单', class: 'bg-primary text-white' },
+            'in_progress': { text: '处理中', class: 'bg-primary text-white' },
+            'pending_confirm': { text: '已完成待确认', class: 'bg-info text-white' },
+            'completed': { text: '已完成', class: 'bg-success text-white' },
+            'evaluated': { text: '已评价', class: 'bg-secondary text-white' },
+            'rejected': { text: '已驳回', class: 'bg-danger text-white' },
+            'cancelled': { text: '已撤销', class: 'bg-dark text-white' }
+        };
+    </script>
+
     <!-- 全局 Layout 脚本 -->
     <script>
         // 1. 验证用户是否登录，未登录则拦截至登录页
