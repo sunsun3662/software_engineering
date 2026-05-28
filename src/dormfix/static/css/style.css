@@ -63,6 +63,8 @@ body {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border-color);
+    position: relative;
+    z-index: 1030; /* 提升层级，防止下拉菜单被下方毛玻璃卡片遮挡 */
 }
 
 /* ==========================================================================
@@ -342,3 +344,9 @@ body {
     opacity: 1;
     pointer-events: all;
 }
+
+/* 确保下拉菜单层级最高，防止被内容区相对定位的元素（如“发起新报修”按钮）遮挡 */
+.dropdown-menu {
+    z-index: 1050 !important;
+}
+
