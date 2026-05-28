@@ -86,7 +86,7 @@
         <div class="modal-content glass-card border-0 shadow-lg">
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title fw-bold text-danger" id="reworkModalLabel"><i class="bi bi-arrow-counterclockwise me-2"></i>申请工单返修</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="reworkModal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body py-3">
                 <div class="mb-3">
@@ -105,9 +105,9 @@
 
 {% block extra_js %}
 <script>
-    // 从路由路径中匹配工单 ID
-    const urlParts = window.location.pathname.split('/');
-    const orderId = urlParts[urlParts.length - 2]; // 路径格式如: /student/orders/{id}/
+    // 从路由路径中匹配工单 ID（兼容有无尾部斜杠）
+    const orderIdMatch = window.location.pathname.match(/\/(\d+)\/?$/);
+    const orderId = orderIdMatch ? orderIdMatch[1] : null;
     
     let reworkModalInstance = null;
 
@@ -123,15 +123,27 @@
     async function loadOrderDetail() {
         showLoader();
         try {
+            console.log('[DEBUG] orderId:', orderId);
+            console.log('[DEBUG] 请求URL:', `/repairs/${orderId}/`);
+
             // 调用 API 2.3：获取工单详情
             const order = await api.get(`/repairs/${orderId}/`);
-            
+
+            console.log('[DEBUG] API返回:', order);
+
+            // 防御性检查：确保 order 数据完整
+            if (!order || !order.order_no) {
+                console.error('[DEBUG] order 数据异常:', order);
+                showToast('工单数据加载异常', 'error');
+                return;
+            }
+
             // 渲染元数据
-            document.getElementById('orderCategoryTitle').textContent = `${order.category_display}报修`;
+            document.getElementById('orderCategoryTitle').textContent = `${order.category_display || '未知'}报修`;
             document.getElementById('orderNoText').textContent = `工单号: ${order.order_no}`;
-            document.getElementById('studentInfo').textContent = `${order.student.name} (${order.student.phone || '无电话'})`;
-            document.getElementById('roomInfo').textContent = `${order.room.building_name} ${order.room.room_no} 室`;
-            document.getElementById('descriptionText').textContent = order.description;
+            document.getElementById('studentInfo').textContent = `${(order.student && order.student.name) || '未知'} (${(order.student && order.student.phone) || '无电话'})`;
+            document.getElementById('roomInfo').textContent = `${(order.room && order.room.building_name) || '未知'} ${(order.room && order.room.room_no) || ''} 室`;
+            document.getElementById('descriptionText').textContent = order.description || '无描述';
 
             // 渲染图片
             const imageArea = document.getElementById('imageAttachmentArea');
@@ -168,10 +180,13 @@
             renderActions(order.status);
 
             // 渲染时间线
-            renderTimeline(order.logs, order.status);
+            renderTimeline(order.logs || [], order.status);
 
         } catch (e) {
-            showToast('获取工单详情失败', 'error');
+            console.error('[DEBUG] 捕获异常:', e);
+            console.error('[DEBUG] 异常类型:', typeof e);
+            console.error('[DEBUG] 异常内容:', JSON.stringify(e));
+            showToast('获取工单详情失败: ' + (e.message || JSON.stringify(e) || '未知错误'), 'error');
         } finally {
             hideLoader();
         }
@@ -224,7 +239,7 @@
     // 渲染工单流转日志时间轴
     function renderTimeline(logs, currentStatus) {
         const container = document.getElementById('timelineContainer');
-        if (!logs || logs.length === 0) {
+        if (!logs || !Array.isArray(logs) || logs.length === 0) {
             container.innerHTML = `<div class="text-center text-muted small py-3">暂无流转日志记录</div>`;
             return;
         }

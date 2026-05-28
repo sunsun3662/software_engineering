@@ -42,6 +42,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'dormfix.middleware.DisableCacheMiddleware',  # 开发模式禁用缓存
 ]
 
 ROOT_URLCONF = 'dormfix.urls'

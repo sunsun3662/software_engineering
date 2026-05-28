@@ -1,4 +1,5 @@
 const API_BASE_URL = '/api';
+const API_TIMEOUT = 15000; // 15秒超时
 
 const api = {
     /**
@@ -9,12 +10,12 @@ const api = {
     async request(url, options = {}) {
         const token = localStorage.getItem('dormfix_token');
         const headers = options.headers || {};
-        
+
         // 1. 自动携带 Token 认证信息
         if (token) {
             headers['Authorization'] = `Token ${token}`;
         }
-        
+
         // 2. 自动处理 Content-Type。如果使用了 FormData（上传图片），不设置由浏览器自动处理 boundary
         if (!(options.body instanceof FormData) && !headers['Content-Type']) {
             headers['Content-Type'] = 'application/json';
@@ -22,10 +23,16 @@ const api = {
 
         options.headers = headers;
 
+        // 3. 添加超时控制
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+        options.signal = controller.signal;
+
         try {
             const response = await fetch(`${API_BASE_URL}${url}`, options);
-            
-            // 3. 拦截 401 状态（认证过期或无效），强制重定向回登录页面
+            clearTimeout(timeoutId);
+
+            // 4. 拦截 401 状态（认证过期或无效），强制重定向回登录页面
             if (response.status === 401) {
                 localStorage.removeItem('dormfix_token');
                 localStorage.removeItem('dormfix_user');
@@ -33,27 +40,37 @@ const api = {
                 if (!window.location.pathname.endsWith('/login/')) {
                     window.location.href = '/login/';
                 }
-                return;
+                throw new Error('认证已过期，请重新登录');
             }
-            
-            // 4. 处理 204 No Content 或空响应
+
+            // 5. 处理 204 No Content 或空响应
             if (response.status === 204) {
                 return null;
             }
-            
-            // 5. 对导出报表接口进行特殊文件流接收处理
+
+            // 6. 如果响应状态码不为 2xx，则抛出后端返回的错误负载
+            if (!response.ok) {
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch (e) {
+                    errorData = { detail: `服务器错误 (${response.status})` };
+                }
+                throw errorData;
+            }
+
+            // 7. 对导出报表接口进行特殊文件流接收处理
             if (url.includes('/dashboard/export/')) {
                 return await response.blob();
             }
 
             const responseData = await response.json();
-            
-            // 6. 如果响应状态码不为 2xx，则抛出后端返回的错误负载
-            if (!response.ok) {
-                throw responseData;
-            }
             return responseData;
         } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error('请求超时，请检查网络连接后重试');
+            }
             console.error('API Error details:', error);
             throw error;
         }

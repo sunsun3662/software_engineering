@@ -194,9 +194,9 @@
                             </div>
                             
                             <!-- 描述 -->
-                            <h6 class="fw-bold text-dark mb-2">${order.category_display}报修</h6>
+                            <h6 class="fw-bold text-dark mb-2">${escapeHtml(order.category_display)}报修</h6>
                             <p class="card-text text-muted text-truncate-3 small flex-grow-1" style="min-height: 54px;">
-                                ${order.description}
+                                ${escapeHtml(order.description)}
                             </p>
 
                             <hr class="my-3 border-secondary-subtle opacity-50">
@@ -204,7 +204,7 @@
                             <!-- 位置 & 时间 -->
                             <div class="d-flex align-items-center justify-content-between text-muted small mb-3">
                                 <div>
-                                    <i class="bi bi-geo-alt-fill me-1"></i>${order.room.building_name} ${order.room.room_no}
+                                    <i class="bi bi-geo-alt-fill me-1"></i>${order.room ? escapeHtml(order.room.building_name) + ' ' + escapeHtml(order.room.room_no) : '未知位置'}
                                 </div>
                                 <div>
                                     <i class="bi bi-clock-history me-1"></i>${new Date(order.submit_time).toLocaleDateString()}
@@ -238,7 +238,7 @@
         // 上一页
         html += `
             <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                <button class="page-link rounded-3 border-0 px-3 py-2 shadow-sm" onclick="changePage(${currentPage - 1})">
+                <button class="page-link rounded-3 border-0 px-3 py-2 shadow-sm" ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})">
                     <i class="bi bi-chevron-left"></i>
                 </button>
             </li>
@@ -258,7 +258,7 @@
         // 下一页
         html += `
             <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-                <button class="page-link rounded-3 border-0 px-3 py-2 shadow-sm" onclick="changePage(${currentPage + 1})">
+                <button class="page-link rounded-3 border-0 px-3 py-2 shadow-sm" ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})">
                     <i class="bi bi-chevron-right"></i>
                 </button>
             </li>
@@ -269,6 +269,7 @@
 
     // 页数改变
     function changePage(page) {
+        if (page < 1) return;
         currentPage = page;
         loadOrders();
     }

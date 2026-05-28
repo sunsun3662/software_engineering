@@ -46,8 +46,8 @@
                 </div>
 
                 <div class="mb-4">
-                    <label for="content" class="form-label fw-semibold text-dark">2. 投诉具体事实阐述</label>
-                    <textarea class="form-control" id="content" rows="5" maxlength="300" placeholder="请详细叙述投诉的具体原因和事实，方便我们在核查时了解真实原委（限 300 字）。" required></textarea>
+                    <label for="complaintContent" class="form-label fw-semibold text-dark">2. 投诉具体事实阐述</label>
+                    <textarea class="form-control" id="complaintContent" rows="5" maxlength="300" placeholder="请详细叙述投诉的具体原因和事实，方便我们在核查时了解真实原委（限 300 字）。" required></textarea>
                     <div class="d-flex justify-content-between mt-1">
                         <span class="invalid-feedback m-0" id="contentError">请填写投诉具体事实</span>
                         <small class="text-muted ms-auto"><span id="charCount">0</span>/300 字</small>
@@ -66,32 +66,64 @@
 
 {% block extra_js %}
 <script>
-    const urlParts = window.location.pathname.split('/');
-    const orderId = urlParts[urlParts.length - 2]; // 路径格式: /student/complaint/{id}/
+    // 从路由路径中匹配工单 ID（兼容有无尾部斜杠）
+    const orderIdMatch = window.location.pathname.match(/\/(\d+)\/?$/);
+    const orderId = orderIdMatch ? orderIdMatch[1] : null;
 
     document.addEventListener('DOMContentLoaded', async function () {
         // 1. 加载工单详情
         showLoader();
+        let canComplain = false;
         try {
             const order = await api.get(`/repairs/${orderId}/`);
             document.getElementById('orderCategoryText').textContent = `${order.category_display}报修`;
             document.getElementById('orderNoText').textContent = `工单号: ${order.order_no}`;
-            document.getElementById('orderDescText').innerHTML = `<strong>原报修描述：</strong>${order.description}`;
+            document.getElementById('orderDescText').innerHTML = `<strong>原报修描述：</strong>${escapeHtml(order.description)}`;
+
+            // 检查工单状态是否允许投诉
+            if (order.status !== 'completed' && order.status !== 'evaluated') {
+                const statusMap = {
+                    'pending_confirm': '该工单尚未确认完工，暂不能投诉',
+                    'in_progress': '该工单正在维修中，暂不能投诉',
+                    'assigned': '该工单已派单，暂不能投诉',
+                    'pending_review': '该工单待审核，暂不能投诉',
+                    'pending_dispatch': '该工单待派单，暂不能投诉',
+                    'rejected': '该工单已被驳回，无法投诉',
+                    'cancelled': '该工单已撤销，无法投诉'
+                };
+                const msg = statusMap[order.status] || '该工单当前状态不允许投诉';
+                document.getElementById('complaintForm').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="bi bi-exclamation-circle text-warning" style="font-size: 3rem;"></i>
+                        <h5 class="fw-bold mt-3 text-secondary">${msg}</h5>
+                        <a href="/student/orders/" class="btn btn-primary mt-3 px-4 rounded-3">返回工单列表</a>
+                    </div>
+                `;
+            } else {
+                canComplain = true;
+            }
         } catch (e) {
             showToast('加载工单信息失败', 'error');
         } finally {
             hideLoader();
         }
 
+        // 如果工单状态不允许投诉，不绑定表单事件
+        if (!canComplain) return;
+
         // 字数计数
-        const contentTextarea = document.getElementById('content');
+        const contentTextarea = document.getElementById('complaintContent');
         const charCount = document.getElementById('charCount');
-        contentTextarea.addEventListener('input', function() {
-            charCount.textContent = this.value.length;
-        });
+        if (contentTextarea) {
+            contentTextarea.addEventListener('input', function() {
+                charCount.textContent = this.value.length;
+            });
+        }
 
         // 2. 提交投诉表单
         const form = document.getElementById('complaintForm');
+        if (!form) return;
+
         const duplicateAlert = document.getElementById('duplicateAlert');
         const warningMessage = document.getElementById('warningMessage');
 
@@ -109,14 +141,14 @@
             showLoader();
             const payload = {
                 type: document.getElementById('complaintType').value,
-                content: contentTextarea.value.trim()
+                content: contentTextarea ? contentTextarea.value.trim() : ''
             };
 
             try {
                 // 调用 API 5.2：提交投诉
                 const res = await api.post(`/feedback/complaint/${orderId}/`, payload);
                 showToast(res.message || '投诉单提交成功，我们将尽快处理！', 'success');
-                
+
                 setTimeout(() => {
                     window.location.href = '/student/orders/';
                 }, 1500);

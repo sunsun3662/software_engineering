@@ -67,8 +67,8 @@
 
                 <!-- 文字评语 -->
                 <div class="mb-4 mt-5">
-                    <label for="content" class="form-label fw-semibold text-dark">写点评价语 (选填)</label>
-                    <textarea class="form-control" id="content" rows="3" maxlength="200" placeholder="分享一下您的维修体验，限 200 字。"></textarea>
+                    <label for="evalContent" class="form-label fw-semibold text-dark">写点评价语 (选填)</label>
+                    <textarea class="form-control" id="evalContent" rows="3" maxlength="200" placeholder="分享一下您的维修体验，限 200 字。"></textarea>
                     <div class="d-flex justify-content-between mt-1">
                         <div class="invalid-feedback m-0" id="contentValidationError">评论内容含敏感词，请修改</div>
                         <small class="text-muted ms-auto"><span id="charCount">0</span>/200 字</small>
@@ -87,33 +87,76 @@
 
 {% block extra_js %}
 <script>
-    const urlParts = window.location.pathname.split('/');
-    const orderId = urlParts[urlParts.length - 2]; // 格式: /student/evaluate/{id}/
+    // 从路由路径中匹配工单 ID（兼容有无尾部斜杠）
+    const orderIdMatch = window.location.pathname.match(/\/(\d+)\/?$/);
+    const orderId = orderIdMatch ? orderIdMatch[1] : null;
 
     document.addEventListener('DOMContentLoaded', async function () {
         // 1. 获取工单基本信息
         showLoader();
+        let canEvaluate = false;
         try {
+            console.log('[评价页] orderId:', orderId);
             const order = await api.get(`/repairs/${orderId}/`);
+            console.log('[评价页] API返回:', order);
+
+            if (!order) {
+                showToast('工单数据加载失败', 'error');
+                return;
+            }
+
             document.getElementById('orderCategoryText').textContent = `${order.category_display}报修`;
             document.getElementById('orderNoText').textContent = `工单号: ${order.order_no}`;
+
+            // 检查工单状态是否允许评价
+            if (order.status !== 'completed') {
+                const statusMap = {
+                    'evaluated': '该工单已评价，无需重复提交',
+                    'pending_confirm': '该工单尚未确认完工，暂不能评价',
+                    'in_progress': '该工单正在维修中，暂不能评价',
+                    'assigned': '该工单已派单，暂不能评价',
+                    'pending_review': '该工单待审核，暂不能评价',
+                    'pending_dispatch': '该工单待派单，暂不能评价',
+                    'rejected': '该工单已被驳回，无法评价',
+                    'cancelled': '该工单已撤销，无法评价'
+                };
+                const msg = statusMap[order.status] || '该工单当前状态不允许评价';
+                document.getElementById('evaluationForm').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="bi bi-exclamation-circle text-warning" style="font-size: 3rem;"></i>
+                        <h5 class="fw-bold mt-3 text-secondary">${msg}</h5>
+                        <a href="/student/orders/" class="btn btn-primary mt-3 px-4 rounded-3">返回工单列表</a>
+                    </div>
+                `;
+            } else {
+                canEvaluate = true;
+            }
         } catch (e) {
             showToast('加载工单信息失败', 'error');
         } finally {
             hideLoader();
         }
 
+        // 如果工单状态不允许评价，不绑定表单事件
+        if (!canEvaluate) return;
+
         // 字数计数
-        const contentTextarea = document.getElementById('content');
+        const contentTextarea = document.getElementById('evalContent');
         const charCount = document.getElementById('charCount');
-        contentTextarea.addEventListener('input', function() {
-            charCount.textContent = this.value.length;
-        });
+        if (contentTextarea) {
+            contentTextarea.addEventListener('input', function() {
+                charCount.textContent = this.value.length;
+            });
+        }
 
         // 2. 评价提交
         const form = document.getElementById('evaluationForm');
+        if (!form) return;
+
         form.addEventListener('submit', async function (e) {
             e.preventDefault();
+            console.log('[评价] 表单提交触发');
+
             form.classList.remove('was-validated');
 
             // 检查评分必填项
@@ -121,8 +164,10 @@
             const attitudeChecked = document.querySelector('input[name="attitude_score"]:checked');
             const qualityChecked = document.querySelector('input[name="quality_score"]:checked');
 
+            console.log('[评价] 评分:', speedChecked?.value, attitudeChecked?.value, qualityChecked?.value);
+
             let isValid = true;
-            
+
             if (!speedChecked) {
                 document.getElementById('speedError').style.display = 'block';
                 isValid = false;
@@ -144,36 +189,47 @@
                 document.getElementById('qualityError').style.display = 'none';
             }
 
-            if (!isValid) return;
+            if (!isValid) {
+                console.log('[评价] 验证失败，未填完');
+                return;
+            }
 
+            console.log('[评价] 验证通过，开始提交...');
             showLoader();
+
             const payload = {
                 speed_score: parseInt(speedChecked.value),
                 attitude_score: parseInt(attitudeChecked.value),
                 quality_score: parseInt(qualityChecked.value),
-                content: contentTextarea.value.trim()
+                content: contentTextarea ? contentTextarea.value.trim() : ''
             };
 
+            console.log('[评价] payload:', payload);
+            console.log('[评价] 请求URL:', `/feedback/evaluate/${orderId}/`);
+
             try {
-                // 调用 API 5.1：提交评价
                 const res = await api.post(`/feedback/evaluate/${orderId}/`, payload);
+                console.log('[评价] API返回:', res);
                 showToast(res.message || '评价成功，感谢您的反馈！', 'success');
-                
+
                 setTimeout(() => {
                     window.location.href = '/student/orders/';
                 }, 1500);
             } catch (error) {
-                // 处理敏感词等 400 校验错误
+                console.error('[评价] API错误:', error);
                 if (error && error.content) {
                     contentTextarea.classList.add('is-invalid');
                     document.getElementById('contentValidationError').textContent = error.content.join(', ');
                     document.getElementById('contentValidationError').style.display = 'block';
                 } else if (error && error.detail) {
                     showToast(error.detail, 'error');
+                } else if (error && error.error) {
+                    showToast(error.error, 'error');
                 } else {
-                    showToast('提交评价失败', 'error');
+                    showToast('提交评价失败: ' + (error.message || JSON.stringify(error)), 'error');
                 }
             } finally {
+                console.log('[评价] 请求结束，隐藏loader');
                 hideLoader();
             }
         });

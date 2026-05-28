@@ -249,8 +249,8 @@
 
                             <!-- 学生联系方式 -->
                             <div class="mb-3">
-                                <span class="d-block text-dark fw-semibold small"><i class="bi bi-geo-alt-fill text-danger me-1"></i>${t.room.building_name} ${t.room.room_no} 室</span>
-                                <span class="d-block text-muted small mt-1"><i class="bi bi-person-fill me-1"></i>${t.student.name} (${t.student.phone})</span>
+                                <span class="d-block text-dark fw-semibold small"><i class="bi bi-geo-alt-fill text-danger me-1"></i>${t.room ? escapeHtml(t.room.building_name) + ' ' + escapeHtml(t.room.room_no) + ' 室' : '未知位置'}</span>
+                                <span class="d-block text-muted small mt-1"><i class="bi bi-person-fill me-1"></i>${t.student ? escapeHtml(t.student.name) + ' (' + escapeHtml(t.student.phone) + ')' : '未知学生'}</span>
                             </div>
 
                             <div class="mt-auto">
