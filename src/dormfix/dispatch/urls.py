@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('all/', views.all_orders_view, name='all-orders'),
     path('pending-review/', views.pending_review_list_view, name='pending-review-list'),
     path('<int:pk>/approve/', views.approve_view, name='order-approve'),
     path('<int:pk>/reject/', views.reject_view, name='order-reject'),

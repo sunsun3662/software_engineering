@@ -10,13 +10,18 @@
     <div class="card-header bg-transparent border-0 p-0">
         <ul class="nav nav-tabs nav-justified border-secondary-subtle" id="adminTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link py-3 fw-bold active" id="review-tab" data-bs-toggle="tab" data-bs-target="#review-pane" type="button" role="tab" aria-controls="review-pane" aria-selected="true">
-                    <i class="bi bi-clipboard-check me-2"></i>待审核工单 <span class="badge bg-warning text-dark rounded-pill ms-1" id="reviewCount">0</span>
+                <button class="nav-link py-3 fw-bold active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-pane" type="button" role="tab" aria-controls="all-pane" aria-selected="true">
+                    <i class="bi bi-list-ul me-2"></i>全部工单 <span class="badge bg-secondary rounded-pill ms-1" id="allCount">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-3 fw-bold" id="review-tab" data-bs-toggle="tab" data-bs-target="#review-pane" type="button" role="tab" aria-controls="review-pane" aria-selected="false">
+                    <i class="bi bi-clipboard-check me-2"></i>待审核 <span class="badge bg-warning text-dark rounded-pill ms-1" id="reviewCount">0</span>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link py-3 fw-bold" id="dispatch-tab" data-bs-toggle="tab" data-bs-target="#dispatch-pane" type="button" role="tab" aria-controls="dispatch-pane" aria-selected="false">
-                    <i class="bi bi-truck-flatbed me-2"></i>待派发工单 <span class="badge bg-primary rounded-pill ms-1" id="dispatchCount">0</span>
+                    <i class="bi bi-truck-flatbed me-2"></i>待派发 <span class="badge bg-primary rounded-pill ms-1" id="dispatchCount">0</span>
                 </button>
             </li>
         </ul>
@@ -24,13 +29,35 @@
     
     <div class="card-body p-4">
         <div class="tab-content" id="adminTabsContent">
+            <!-- Panel 0: 全部工单 -->
+            <div class="tab-pane fade show active" id="all-pane" role="tabpanel" aria-labelledby="all-tab" tabindex="0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>单号</th>
+                                <th>报修人</th>
+                                <th>报修位置</th>
+                                <th>类别</th>
+                                <th>状态</th>
+                                <th>紧急度</th>
+                                <th>提交时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Panel 1: 待审核工单 -->
-            <div class="tab-pane fade show active" id="review-pane" role="tabpanel" aria-labelledby="review-tab" tabindex="0">
+            <div class="tab-pane fade" id="review-pane" role="tabpanel" aria-labelledby="review-tab" tabindex="0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle border-0" id="reviewTable">
                         <thead class="table-light">
                             <tr>
                                 <th>单号</th>
+                                <th>报修人</th>
                                 <th>报修位置</th>
                                 <th>类别</th>
                                 <th>描述</th>
@@ -40,7 +67,6 @@
                             </tr>
                         </thead>
                         <tbody id="reviewTableBody">
-                            <!-- 动态加载 -->
                         </tbody>
                     </table>
                 </div>
@@ -53,6 +79,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th>单号</th>
+                                <th>报修人</th>
                                 <th>报修位置</th>
                                 <th>类别</th>
                                 <th>描述</th>
@@ -62,7 +89,6 @@
                             </tr>
                         </thead>
                         <tbody id="dispatchTableBody">
-                            <!-- 动态加载 -->
                         </tbody>
                     </table>
                 </div>
@@ -145,30 +171,28 @@
         const path = window.location.pathname;
         if (path.includes('/admin/pending-dispatch/')) {
             const tabEl = document.querySelector('#dispatch-tab');
-            if (tabEl) {
-                bootstrap.Tab.getOrCreateInstance(tabEl).show();
-            }
+            if (tabEl) bootstrap.Tab.getOrCreateInstance(tabEl).show();
         }
 
-        // 监听标签页切换事件以刷新对应的数据
+        // 监听标签页切换事件
+        document.getElementById('all-tab').addEventListener('shown.bs.tab', () => loadAllOrders());
         document.getElementById('review-tab').addEventListener('shown.bs.tab', () => loadPendingReviews());
         document.getElementById('dispatch-tab').addEventListener('shown.bs.tab', () => loadPendingDispatches());
 
-        // 初始加载全部计数和当前激活 Tab 的数据
+        // 初始加载
         refreshCounts();
-        if (path.includes('/admin/pending-dispatch/')) {
-            loadPendingDispatches();
-        } else {
-            loadPendingReviews();
-        }
+        loadAllOrders();
 
         // 绑定确认驳回事件
         document.getElementById('confirmRejectBtn').addEventListener('click', submitReject);
     });
 
-    // 刷新 Tab 上的红点计数
+    // 刷新 Tab 上的计数
     async function refreshCounts() {
         try {
+            const allData = await api.get('/dispatch/all/?page_size=1');
+            document.getElementById('allCount').textContent = allData.count;
+
             const reviewData = await api.get('/dispatch/pending-review/');
             document.getElementById('reviewCount').textContent = reviewData.count;
 
@@ -179,15 +203,69 @@
         }
     }
 
+    // 加载全部工单
+    async function loadAllOrders() {
+        const body = document.getElementById('allTableBody');
+        body.innerHTML = `<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary spinner-border-sm" role="status"></div> 读取中...</td></tr>`;
+
+        try {
+            const data = await api.get('/dispatch/all/?page_size=50');
+            renderAllOrdersTable(data.results, body);
+        } catch (e) {
+            body.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">加载失败</td></tr>`;
+        }
+    }
+
+    // 渲染全部工单表格
+    function renderAllOrdersTable(orders, tbody) {
+        if (!orders || orders.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-5">暂无工单数据</td></tr>`;
+            return;
+        }
+
+        const statusBadges = {
+            'pending_review': 'bg-warning text-dark',
+            'pending_dispatch': 'bg-info text-white',
+            'assigned': 'bg-primary text-white',
+            'in_progress': 'bg-primary text-white',
+            'pending_confirm': 'bg-info text-white',
+            'completed': 'bg-success text-white',
+            'evaluated': 'bg-secondary text-white',
+            'rejected': 'bg-danger text-white',
+            'cancelled': 'bg-dark text-white'
+        };
+
+        const categoryLabels = {
+            'water_electric': '水电', 'door_window': '门窗', 'network': '网络',
+            'furniture': '家具', 'other': '其他'
+        };
+
+        let html = '';
+        orders.forEach(o => {
+            const badge = STATUS_MAP[o.status] || { text: o.status_display, class: 'bg-secondary' };
+            html += `
+                <tr>
+                    <td class="fw-semibold small">${escapeHtml(o.order_no)}</td>
+                    <td>${escapeHtml(o.student ? o.student.name : '--')}</td>
+                    <td><span class="d-block">${escapeHtml(o.room ? o.room.building_name : '--')}</span><small class="text-muted">${escapeHtml(o.room ? o.room.room_no : '')}</small></td>
+                    <td><span class="badge bg-light text-dark">${categoryLabels[o.category] || o.category_display}</span></td>
+                    <td><span class="badge ${badge.class}">${badge.text}</span></td>
+                    <td><span class="badge ${o.urgency_level === 'urgent' ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-secondary'}">${o.urgency_level === 'urgent' ? '紧急' : '普通'}</span></td>
+                    <td class="text-muted small">${new Date(o.submit_time).toLocaleString()}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
     // 1. 加载待审核工单
     async function loadPendingReviews() {
         const body = document.getElementById('reviewTableBody');
-        body.innerHTML = `<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary spinner-border-sm" role="status"></div> 读取数据中...</td></tr>`;
-        
+        body.innerHTML = `<tr><td colspan="8" class="text-center py-4"><div class="spinner-border text-primary spinner-border-sm" role="status"></div> 读取中...</td></tr>`;
+
         try {
-            // 调用 API 3.1：获取待审核列表
             const data = await api.get('/dispatch/pending-review/');
-            renderTableData(data.results, body, true);
+            renderReviewTable(data.results, body);
         } catch (e) {
             showToast('获取待审核列表失败', 'error');
         }
@@ -196,82 +274,77 @@
     // 2. 加载待派单工单
     async function loadPendingDispatches() {
         const body = document.getElementById('dispatchTableBody');
-        body.innerHTML = `<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary spinner-border-sm" role="status"></div> 读取数据中...</td></tr>`;
-        
+        body.innerHTML = `<tr><td colspan="8" class="text-center py-4"><div class="spinner-border text-primary spinner-border-sm" role="status"></div> 读取中...</td></tr>`;
+
         try {
-            // 调用 API 3.4：获取待派单列表
             const data = await api.get('/dispatch/pending-dispatch/');
-            renderTableData(data.results, body, false);
+            renderDispatchTable(data.results, body);
         } catch (e) {
             showToast('获取待派单列表失败', 'error');
         }
     }
 
-    // 渲染工单表格行
-    function renderTableData(orders, tbodyElement, isReviewTab) {
+    // 渲染待审核表格
+    function renderReviewTable(orders, tbody) {
         if (!orders || orders.length === 0) {
-            tbodyElement.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-5"><i class="bi bi-check-circle text-success fs-3 d-block mb-2"></i>暂无需要处理的工单</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-5"><i class="bi bi-check-circle text-success fs-3 d-block mb-2"></i>暂无待审核工单</td></tr>`;
             return;
         }
 
-        const categoryLabels = {
-            'water_electric': '水电',
-            'door_window': '门窗',
-            'network': '网络',
-            'furniture': '家具',
-            'other': '其他'
-        };
-
-        const urgencyClasses = {
-            'normal': 'bg-secondary-subtle text-secondary',
-            'urgent': 'bg-danger-subtle text-danger'
-        };
+        const categoryLabels = { 'water_electric': '水电', 'door_window': '门窗', 'network': '网络', 'furniture': '家具', 'other': '其他' };
 
         let html = '';
-        orders.forEach(order => {
-            const urgencyText = order.urgency_level === 'urgent' ? '紧急' : '普通';
-            const urgencyClass = urgencyClasses[order.urgency_level] || 'bg-light';
-            
-            // 动作按钮
-            let actionBtnHTML = '';
-            if (isReviewTab) {
-                actionBtnHTML = `
-                    <div class="d-flex gap-2 justify-content-center">
-                        <button class="btn btn-sm btn-outline-danger" onclick="openRejectModal(${order.id})">
-                            <i class="bi bi-x-circle me-1"></i>驳回
-                        </button>
-                        <button class="btn btn-sm btn-success text-white" onclick="approveOrder(${order.id})">
-                            <i class="bi bi-check-circle me-1"></i>通过
-                        </button>
-                    </div>
-                `;
-            } else {
-                actionBtnHTML = `
-                    <div class="text-center">
-                        <button class="btn btn-sm btn-primary" onclick="openAssignModal(${order.id}, '${order.order_no}')">
-                            <i class="bi bi-person-fill-gear me-1"></i>指派任务
-                        </button>
-                    </div>
-                `;
-            }
-
+        orders.forEach(o => {
             html += `
                 <tr>
-                    <td class="fw-semibold small">${order.order_no}</td>
+                    <td class="fw-semibold small">${escapeHtml(o.order_no)}</td>
+                    <td>${escapeHtml(o.student ? o.student.name : '--')}</td>
+                    <td><span class="d-block fw-medium">${escapeHtml(o.room ? o.room.building_name : '--')}</span><small class="text-muted">${escapeHtml(o.room ? o.room.room_no : '')}</small></td>
+                    <td><span class="badge bg-light text-dark">${categoryLabels[o.category] || o.category_display}</span></td>
+                    <td class="text-truncate-2" style="max-width: 200px;" title="${escapeHtml(o.description)}">${escapeHtml(o.description)}</td>
+                    <td><span class="badge ${o.urgency_level === 'urgent' ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-secondary'}">${o.urgency_level === 'urgent' ? '紧急' : '普通'}</span></td>
+                    <td class="text-muted small">${new Date(o.submit_time).toLocaleString()}</td>
                     <td>
-                        <span class="d-block fw-medium">${order.room.building_name}</span>
-                        <small class="text-muted">${order.room.room_no} 室</small>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <button class="btn btn-sm btn-outline-danger" onclick="openRejectModal(${o.id})"><i class="bi bi-x-circle me-1"></i>驳回</button>
+                            <button class="btn btn-sm btn-success text-white" onclick="approveOrder(${o.id})"><i class="bi bi-check-circle me-1"></i>通过</button>
+                        </div>
                     </td>
-                    <td><span class="badge bg-light text-dark border-0 rounded px-2.5 py-1.5">${categoryLabels[order.category] || order.category_display}</span></td>
-                    <td class="text-truncate-2" style="max-width: 250px;" title="${order.description}">${order.description}</td>
-                    <td><span class="badge ${urgencyClass} px-2 py-1">${urgencyText}</span></td>
-                    <td class="text-muted small">${new Date(order.submit_time).toLocaleString()}</td>
-                    <td>${actionBtnHTML}</td>
                 </tr>
             `;
         });
+        tbody.innerHTML = html;
+    }
 
-        tbodyElement.innerHTML = html;
+    // 渲染待派发表格
+    function renderDispatchTable(orders, tbody) {
+        if (!orders || orders.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-5"><i class="bi bi-check-circle text-success fs-3 d-block mb-2"></i>暂无待派发工单</td></tr>`;
+            return;
+        }
+
+        const categoryLabels = { 'water_electric': '水电', 'door_window': '门窗', 'network': '网络', 'furniture': '家具', 'other': '其他' };
+
+        let html = '';
+        orders.forEach(o => {
+            html += `
+                <tr>
+                    <td class="fw-semibold small">${escapeHtml(o.order_no)}</td>
+                    <td>${escapeHtml(o.student ? o.student.name : '--')}</td>
+                    <td><span class="d-block fw-medium">${escapeHtml(o.room ? o.room.building_name : '--')}</span><small class="text-muted">${escapeHtml(o.room ? o.room.room_no : '')}</small></td>
+                    <td><span class="badge bg-light text-dark">${categoryLabels[o.category] || o.category_display}</span></td>
+                    <td class="text-truncate-2" style="max-width: 200px;" title="${escapeHtml(o.description)}">${escapeHtml(o.description)}</td>
+                    <td><span class="badge ${o.urgency_level === 'urgent' ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-secondary'}">${o.urgency_level === 'urgent' ? '紧急' : '普通'}</span></td>
+                    <td class="text-muted small">${new Date(o.submit_time).toLocaleString()}</td>
+                    <td>
+                        <div class="text-center">
+                            <button class="btn btn-sm btn-primary" onclick="openAssignModal(${o.id}, '${escapeHtml(o.order_no)}')"><i class="bi bi-person-fill-gear me-1"></i>指派</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
     }
 
     // ==========================================

@@ -133,6 +133,30 @@ def maintainer_list_view(request):
     return Response(result)
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def all_orders_view(request):
+    """管理员：获取全部工单列表"""
+    if not request.user.is_admin:
+        return Response({'error': '无权限'}, status=status.HTTP_403_FORBIDDEN)
+
+    orders = WorkOrder.objects.all()
+
+    # 筛选
+    status_filter = request.query_params.get('status')
+    category_filter = request.query_params.get('category')
+    if status_filter:
+        orders = orders.filter(status=status_filter)
+    if category_filter:
+        orders = orders.filter(category=category_filter)
+
+    paginator = PageNumberPagination()
+    paginator.page_size = int(request.query_params.get('page_size', 20))
+    result_page = paginator.paginate_queryset(orders, request)
+    serializer = WorkOrderListSerializer(result_page, many=True)
+    return paginator.get_paginated_response(serializer.data)
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def assign_view(request, pk):
