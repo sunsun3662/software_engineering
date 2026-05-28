@@ -40,7 +40,7 @@
             <form id="repairForm" novalidate>
                 <!-- 第一步：选择位置 -->
                 <div class="step-content" id="step1Content">
-                    <h5 class="fw-bold mb-3 text-slate-800"><i class="bi bi-geo-alt me-2 text-primary"></i>第一步：选择您的宿舍位置</h5>
+                    <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-geo-alt me-2 text-primary"></i>第一步：选择您的宿舍位置</h5>
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label for="buildingSelect" class="form-label fw-medium">宿舍楼栋</label>
@@ -66,7 +66,7 @@
 
                 <!-- 第二步：故障描述 -->
                 <div class="step-content d-none" id="step2Content">
-                    <h5 class="fw-bold mb-3 text-slate-800"><i class="bi bi-file-earmark-text me-2 text-primary"></i>第二步：描述故障详情</h5>
+                    <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-file-earmark-text me-2 text-primary"></i>第二步：描述故障详情</h5>
                     <div class="mb-4">
                         <label for="categorySelect" class="form-label fw-medium">报修类别</label>
                         <select class="form-select" id="categorySelect" required>
@@ -110,13 +110,13 @@
 
                 <!-- 第三步：现场照片 -->
                 <div class="step-content d-none" id="step3Content">
-                    <h5 class="fw-bold mb-2 text-slate-800"><i class="bi bi-camera me-2 text-primary"></i>第三步：上传故障现场照片</h5>
+                    <h5 class="fw-bold mb-2 text-dark"><i class="bi bi-camera me-2 text-primary"></i>第三步：上传故障现场照片</h5>
                     <p class="text-muted small mb-4">上传现场照片（限 3 张，每张不得超过 5MB），能让维修人员更快速地准备工具与备品备件。</p>
                     
                     <!-- 拖拽/点击上传区 -->
                     <div class="upload-zone text-center p-4 mb-4" id="dropzone" onclick="document.getElementById('fileInput').click()">
                         <i class="bi bi-cloud-upload text-primary" style="font-size: 2.5rem;"></i>
-                        <h6 class="fw-bold text-slate-700 mt-2">点击或拖拽文件到此处上传</h6>
+                        <h6 class="fw-bold text-dark mt-2">点击或拖拽文件到此处上传</h6>
                         <span class="text-muted small">支持 PNG, JPG, JPEG 格式，小于 5MB</span>
                         <input type="file" id="fileInput" multiple accept="image/png, image/jpeg, image/jpg" class="d-none">
                     </div>

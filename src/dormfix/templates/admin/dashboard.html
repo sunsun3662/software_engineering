@@ -81,7 +81,7 @@
             </div>
             <div class="modal-body py-3">
                 <div class="mb-3">
-                    <label for="rejectReason" class="form-label fw-medium text-slate-700">驳回原因 (必填)</label>
+                    <label for="rejectReason" class="form-label fw-medium text-dark">驳回原因 (必填)</label>
                     <textarea class="form-control" id="rejectReason" rows="3" placeholder="例如：报修信息不实，或者是描述不清，请补充。" required></textarea>
                 </div>
             </div>
@@ -102,7 +102,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body py-3">
-                <p class="text-muted small mb-3">为工单 <strong id="assignOrderNoText" class="text-slate-800">--</strong> 选择一位适合的维修师傅进行指派。请参考师傅当前的当日工作负荷。</p>
+                <p class="text-muted small mb-3">为工单 <strong id="assignOrderNoText" class="text-dark">--</strong> 选择一位适合的维修师傅进行指派。请参考师傅当前的当日工作负荷。</p>
                 
                 <div class="table-responsive" style="max-height: 350px;">
                     <table class="table table-hover align-middle border-0">
@@ -262,7 +262,7 @@
                         <span class="d-block fw-medium">${order.room.building_name}</span>
                         <small class="text-muted">${order.room.room_no} 室</small>
                     </td>
-                    <td><span class="badge bg-light text-slate-800 border-0 rounded px-2.5 py-1.5">${categoryLabels[order.category] || order.category_display}</span></td>
+                    <td><span class="badge bg-light text-dark border-0 rounded px-2.5 py-1.5">${categoryLabels[order.category] || order.category_display}</span></td>
                     <td class="text-truncate-2" style="max-width: 250px;" title="${order.description}">${order.description}</td>
                     <td><span class="badge ${urgencyClass} px-2 py-1">${urgencyText}</span></td>
                     <td class="text-muted small">${new Date(order.submit_time).toLocaleString()}</td>

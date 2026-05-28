@@ -9,7 +9,7 @@
 <div class="glass-card border-0 shadow-sm p-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h5 class="fw-bold m-0 text-slate-800">学生服务投诉列表</h5>
+            <h5 class="fw-bold m-0 text-dark">学生服务投诉列表</h5>
             <p class="text-muted small m-0 mt-1">处理学生反馈的维修质量或服务态度相关的投诉单，确保后勤服务满意度。</p>
         </div>
         <div>
@@ -59,14 +59,14 @@
             </div>
             <div class="modal-body py-3">
                 <div class="mb-3">
-                    <label for="processStatus" class="form-label fw-medium text-slate-700">处理动作</label>
+                    <label for="processStatus" class="form-label fw-medium text-dark">处理动作</label>
                     <select class="form-select" id="processStatus" required>
                         <option value="resolved" selected>已解决并关闭投诉</option>
                         <option value="processing">标记为处理中</option>
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label for="processResult" class="form-label fw-medium text-slate-700">处理意见/回复 (必填)</label>
+                    <label for="processResult" class="form-label fw-medium text-dark">处理意见/回复 (必填)</label>
                     <textarea class="form-control" id="processResult" rows="4" placeholder="写明具体调查情况和解决方案。例如：已对相关维修师傅进行批评教育，并已重新指派专业组长上门返修完毕。" required></textarea>
                 </div>
             </div>
@@ -150,12 +150,12 @@
                 <tr>
                     <td class="fw-semibold">#CP-${c.id}</td>
                     <td class="small text-muted"><a href="/student/orders/${c.work_order.id}/" target="_blank">${c.work_order.order_no}</a></td>
-                    <td><strong class="text-slate-800">${c.student.name}</strong></td>
+                    <td><strong class="text-dark">${c.student.name}</strong></td>
                     <td><span class="badge bg-light text-secondary rounded px-2.5 py-1.5">${typeLabels[c.type] || c.type_display}</span></td>
                     <td class="text-truncate-2" style="max-width: 220px;" title="${c.content}">${c.content}</td>
                     <td><span class="badge ${statusClass} px-2 py-1">${statusText}</span></td>
                     <td class="text-muted small">${new Date(c.created_at).toLocaleString()}</td>
-                    <td class="text-slate-600 text-truncate-2" style="max-width: 200px;" title="${c.process_result || ''}">${c.process_result || '<span class="text-muted italic small">未处理</span>'}</td>
+                    <td class="text-secondary text-truncate-2" style="max-width: 200px;" title="${c.process_result || ''}">${c.process_result || '<span class="text-muted italic small">未处理</span>'}</td>
                     <td class="text-center">${actionBtn}</td>
                 </tr>
             `;
