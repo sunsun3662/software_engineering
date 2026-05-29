@@ -423,31 +423,27 @@
     async function exportExcelReport() {
         showLoader();
         const params = getFilterParams();
-        
+
         try {
-            // 调用 API 6.2：导出报表。此时 api.js 会返回 Blob 二进制负载
-            const blob = await api.get(`/dashboard/export/${params}`, {
-                headers: {
-                    'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                }
-            });
+            // 调用 API 6.2：导出报表
+            const blob = await api.get(`/dashboard/export/${params}`);
 
             // 在前端利用 URL.createObjectURL 进行文件流保存并模拟点击下载
             const downloadUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = downloadUrl;
-            a.download = `DormFix_报修统计报表_${new Date().toLocaleDateString()}.xlsx`;
+            a.download = `DormFix_报修统计报表_${new Date().toISOString().slice(0,10)}.xlsx`;
             document.body.appendChild(a);
             a.click();
-            
+
             // 清理文件资源
             window.URL.revokeObjectURL(downloadUrl);
             document.body.removeChild(a);
             showToast('报表导出成功，开始下载。', 'success');
 
         } catch (e) {
-            showToast('导出报表失败，服务器异常。', 'error');
+            showToast('导出报表失败: ' + (e.message || '服务器异常'), 'error');
         } finally {
             hideLoader();
         }
