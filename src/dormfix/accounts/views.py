@@ -186,3 +186,25 @@ def user_detail_view(request, pk):
     user.save()
 
     return Response(UserSerializer(user).data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def reset_password_view(request, pk):
+    """管理员：重置用户密码"""
+    if not request.user.is_admin:
+        return Response({'error': '无权限'}, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        user = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return Response({'error': '用户不存在'}, status=status.HTTP_404_NOT_FOUND)
+
+    new_password = request.data.get('new_password', '123456')
+    if len(new_password) < 6:
+        return Response({'error': '密码长度不能少于6位'}, status=status.HTTP_400_BAD_REQUEST)
+
+    user.set_password(new_password)
+    user.save()
+
+    return Response({'message': f'密码重置成功'})

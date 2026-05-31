@@ -89,17 +89,30 @@ def statistics_view(request):
         avg_hours = 0
         avg_score = 0
         if completed_count > 0:
-            # 计算平均时长
+            # 计算平均维修时长（从派单到完成）
             total_hours = 0
+            valid_count = 0
             for o in m_orders[:50]:
-                if o.finish_time and o.submit_time:
-                    total_hours += (o.finish_time - o.submit_time).total_seconds() / 3600
-            avg_hours = round(total_hours / completed_count, 1) if completed_count > 0 else 0
+                # 优先使用 assign_time，如果没有则使用 submit_time
+                start_time = o.assign_time if o.assign_time else o.submit_time
+                if o.finish_time and start_time:
+                    diff = (o.finish_time - start_time).total_seconds() / 3600
+                    if diff >= 0:  # 只计算非负值
+                        total_hours += diff
+                        valid_count += 1
+            avg_hours = round(total_hours / valid_count, 1) if valid_count > 0 else 0
 
-            # 计算平均评分
+            # 计算平均评分（综合三个维度）
             evaluations = Evaluation.objects.filter(work_order__maintainer=m)
             if evaluations.exists():
-                avg_score = round(evaluations.aggregate(avg=Avg('speed_score'))['avg'] or 0, 1)
+                avg_data = evaluations.aggregate(
+                    avg_speed=Avg('speed_score'),
+                    avg_attitude=Avg('attitude_score'),
+                    avg_quality=Avg('quality_score')
+                )
+                # 计算综合平均分
+                scores = [v for v in [avg_data['avg_speed'], avg_data['avg_attitude'], avg_data['avg_quality']] if v]
+                avg_score = round(sum(scores) / len(scores), 1) if scores else 0
 
         maintainer_perf.append({
             'maintainer': m.name,

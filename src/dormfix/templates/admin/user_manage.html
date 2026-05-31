@@ -109,22 +109,50 @@
         </div>
     </div>
 </div>
+
+<!-- 重置密码模态框 -->
+<div class="modal fade" id="resetPwdModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-warning"><i class="bi bi-key-fill me-2"></i>重置密码</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="mb-3">即将重置用户 <strong id="resetPwdUserName"></strong> 的密码</p>
+                <div class="mb-3">
+                    <label for="newResetPassword" class="form-label fw-semibold">新密码 <span class="text-danger">*</span></label>
+                    <input type="password" class="form-control" id="newResetPassword" minlength="6" maxlength="128" required placeholder="至少6位" value="123456">
+                    <small class="text-muted">默认密码 123456</small>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-warning rounded-3 px-4" id="submitResetPwdBtn">确认重置</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
     let addModal = null;
+    let resetPwdModal = null;
+    let currentResetUserId = null;
     let currentPage = 1;
     const pageSize = 20;
 
     document.addEventListener('DOMContentLoaded', function () {
         addModal = new bootstrap.Modal(document.getElementById('addUserModal'));
+        resetPwdModal = new bootstrap.Modal(document.getElementById('resetPwdModal'));
 
         loadUsers();
 
         document.getElementById('filterRole').addEventListener('change', () => { currentPage = 1; loadUsers(); });
         document.getElementById('filterStatus').addEventListener('change', () => { currentPage = 1; loadUsers(); });
         document.getElementById('submitAddBtn').addEventListener('click', submitAddUser);
+        document.getElementById('submitResetPwdBtn').addEventListener('click', submitResetPassword);
     });
 
     async function loadUsers() {
@@ -176,7 +204,12 @@
                     <td class="text-muted">${escapeHtml(u.phone || '--')}</td>
                     <td>${statusBadge}</td>
                     <td class="text-muted small">${new Date(u.created_at).toLocaleDateString()}</td>
-                    <td class="text-center">${toggleBtn}</td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            ${toggleBtn}
+                            <button class="btn btn-outline-warning rounded-3 ms-1" onclick="openResetPwdModal(${u.id}, '${escapeHtml(u.name)}')">重置密码</button>
+                        </div>
+                    </td>
                 </tr>
             `;
         });
@@ -265,6 +298,34 @@
             loadUsers();
         } catch (e) {
             showToast('操作失败: ' + (e.error || '未知错误'), 'error');
+        }
+    }
+
+    function openResetPwdModal(userId, userName) {
+        currentResetUserId = userId;
+        document.getElementById('resetPwdUserName').textContent = userName;
+        document.getElementById('newResetPassword').value = '123456';
+        resetPwdModal.show();
+    }
+
+    async function submitResetPassword() {
+        const newPassword = document.getElementById('newResetPassword').value;
+        if (!newPassword || newPassword.length < 6) {
+            showToast('密码长度不能少于6位', 'error');
+            return;
+        }
+
+        document.getElementById('submitResetPwdBtn').disabled = true;
+        try {
+            await api.post(`/accounts/users/${currentResetUserId}/reset-password/`, {
+                new_password: newPassword
+            });
+            resetPwdModal.hide();
+            showToast('密码重置成功', 'success');
+        } catch (e) {
+            showToast('重置失败: ' + (e.error || '未知错误'), 'error');
+        } finally {
+            document.getElementById('submitResetPwdBtn').disabled = false;
         }
     }
 </script>
