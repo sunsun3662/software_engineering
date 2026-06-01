@@ -8,7 +8,7 @@ const api = {
      * @param {object} options - Fetch 的配置参数
      */
     async request(url, options = {}) {
-        const token = localStorage.getItem('dormfix_token');
+        const token = sessionStorage.getItem('dormfix_token');
         const headers = options.headers || {};
 
         // 1. 自动携带 Token 认证信息
@@ -34,8 +34,8 @@ const api = {
 
             // 4. 拦截 401 状态（认证过期或无效），强制重定向回登录页面
             if (response.status === 401) {
-                localStorage.removeItem('dormfix_token');
-                localStorage.removeItem('dormfix_user');
+                sessionStorage.removeItem('dormfix_token');
+                sessionStorage.removeItem('dormfix_user');
                 // 仅在非登录页面时执行跳转，防止死循环
                 if (!window.location.pathname.endsWith('/login/')) {
                     window.location.href = '/login/';

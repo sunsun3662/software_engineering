@@ -80,7 +80,7 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         // 1. 设置个人欢迎语
-        const user = JSON.parse(localStorage.getItem('dormfix_user'));
+        const user = JSON.parse(sessionStorage.getItem('dormfix_user'));
         if (user) {
             document.getElementById('welcomeName').textContent = user.name;
         }

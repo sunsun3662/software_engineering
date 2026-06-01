@@ -95,10 +95,10 @@
                 showToast(res.message || '个人信息已更新！', 'success');
 
                 // 3. 动态更新本地缓存中存储的用户名，以便顶部导航栏同步改变
-                const cachedUser = JSON.parse(localStorage.getItem('dormfix_user'));
+                const cachedUser = JSON.parse(sessionStorage.getItem('dormfix_user'));
                 if (cachedUser) {
                     cachedUser.name = name;
-                    localStorage.setItem('dormfix_user', JSON.stringify(cachedUser));
+                    sessionStorage.setItem('dormfix_user', JSON.stringify(cachedUser));
                     
                     // 动态更新页面上的 Header 和导航栏名字
                     document.getElementById('profileNameHeader').textContent = name;

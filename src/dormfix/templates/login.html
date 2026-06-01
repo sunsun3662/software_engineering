@@ -96,9 +96,9 @@
     <script src="/static/js/api.js"></script>
     
     <script>
-        // 如果 localStorage 中已有 token，直接跳过登录验证重定向
-        const currentToken = localStorage.getItem('dormfix_token');
-        const currentUserJson = localStorage.getItem('dormfix_user');
+        // 如果 sessionStorage 中已有 token，直接跳过登录验证重定向
+        const currentToken = sessionStorage.getItem('dormfix_token');
+        const currentUserJson = sessionStorage.getItem('dormfix_user');
         if (currentToken && currentUserJson) {
             const user = JSON.parse(currentUserJson);
             redirectUser(user.role);
@@ -146,8 +146,8 @@
                 });
 
                 // 登录成功存入本地缓存
-                localStorage.setItem('dormfix_token', data.token);
-                localStorage.setItem('dormfix_user', JSON.stringify(data.user));
+                sessionStorage.setItem('dormfix_token', data.token);
+                sessionStorage.setItem('dormfix_user', JSON.stringify(data.user));
 
                 // 角色页面重定向
                 redirectUser(data.user.role);
