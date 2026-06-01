@@ -18,12 +18,13 @@ class WorkOrderListSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     student = serializers.SerializerMethodField()
     room = serializers.SerializerMethodField()
+    avg_score = serializers.SerializerMethodField()
 
     class Meta:
         model = WorkOrder
         fields = ['id', 'order_no', 'category', 'category_display', 'description',
                   'urgency_level', 'urgency_level_display', 'status', 'status_display',
-                  'submit_time', 'student', 'room']
+                  'submit_time', 'assign_time', 'finish_time', 'student', 'room', 'avg_score']
 
     def get_student(self, obj):
         return {'name': obj.student.name, 'phone': obj.student.phone}
@@ -33,6 +34,18 @@ class WorkOrderListSerializer(serializers.ModelSerializer):
             'building_name': obj.room.building.building_name,
             'room_no': obj.room.room_no
         }
+
+    def get_avg_score(self, obj):
+        """获取工单的平均评分"""
+        if obj.status != 'evaluated':
+            return None
+        try:
+            from feedback.models import Evaluation
+            evaluation = Evaluation.objects.get(work_order=obj)
+            avg = round((evaluation.speed_score + evaluation.attitude_score + evaluation.quality_score) / 3, 1)
+            return avg
+        except Exception:
+            return None
 
 
 class WorkOrderDetailSerializer(serializers.ModelSerializer):

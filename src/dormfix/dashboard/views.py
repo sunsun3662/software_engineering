@@ -81,13 +81,16 @@ def statistics_view(request):
 
     # 维修人员绩效
     from accounts.models import User
+    from feedback.models import Complaint
     maintainers = User.objects.filter(role='maintainer')
     maintainer_perf = []
     for m in maintainers:
-        m_orders = orders.filter(maintainer=m, status__in=['completed', 'evaluated'])
+        # 包含 pending_confirm（维修完成待确认）、completed（已确认）、evaluated（已评价）
+        m_orders = orders.filter(maintainer=m, status__in=['pending_confirm', 'completed', 'evaluated'])
         completed_count = m_orders.count()
         avg_hours = 0
         avg_score = 0
+        complaint_count = 0
         if completed_count > 0:
             # 计算平均维修时长（从派单到完成）
             total_hours = 0
@@ -102,7 +105,7 @@ def statistics_view(request):
                         valid_count += 1
             avg_hours = round(total_hours / valid_count, 1) if valid_count > 0 else 0
 
-            # 计算平均评分（综合三个维度）
+            # 计算平均评分（综合三个维度，只计算已评价的工单）
             evaluations = Evaluation.objects.filter(work_order__maintainer=m)
             if evaluations.exists():
                 avg_data = evaluations.aggregate(
@@ -114,11 +117,15 @@ def statistics_view(request):
                 scores = [v for v in [avg_data['avg_speed'], avg_data['avg_attitude'], avg_data['avg_quality']] if v]
                 avg_score = round(sum(scores) / len(scores), 1) if scores else 0
 
+        # 计算投诉量（该维修人员负责的工单被投诉的次数）
+        complaint_count = Complaint.objects.filter(work_order__maintainer=m).count()
+
         maintainer_perf.append({
             'maintainer': m.name,
             'completed_count': completed_count,
             'avg_hours': avg_hours,
-            'avg_score': avg_score
+            'avg_score': avg_score,
+            'complaint_count': complaint_count
         })
 
     # 满意度分布

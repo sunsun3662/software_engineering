@@ -15,17 +15,21 @@ from .serializers import UserSerializer, UserCreateSerializer, LoginSerializer, 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
-    """用户登录"""
+    """用户登录（支持账号、学号、工号登录）"""
     serializer = LoginSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
-    account = serializer.validated_data['account']
+    login_id = serializer.validated_data['account']
     password = serializer.validated_data['password']
 
+    # 优先用 account 查找，如果找不到再用 student_or_staff_no 查找
     try:
-        user = User.objects.get(account=account)
+        user = User.objects.get(account=login_id)
     except User.DoesNotExist:
-        return Response({'error': '账号不存在'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user = User.objects.get(student_or_staff_no=login_id)
+        except User.DoesNotExist:
+            return Response({'error': '账号不存在'}, status=status.HTTP_400_BAD_REQUEST)
 
     # 检查锁定状态
     if user.lockout_until and user.lockout_until > timezone.now():
@@ -35,8 +39,8 @@ def login_view(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # 验证密码
-    user_auth = authenticate(account=account, password=password)
+    # 验证密码（使用 account 字段进行认证）
+    user_auth = authenticate(account=user.account, password=password)
 
     if user_auth is None:
         user.login_attempts += 1

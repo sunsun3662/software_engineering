@@ -24,8 +24,8 @@ def task_list_view(request):
     if status_filter:
         orders = orders.filter(status=status_filter)
     else:
-        # 默认显示进行中的任务
-        orders = orders.filter(status__in=['assigned', 'in_progress', 'pending_confirm'])
+        # 默认显示所有任务（进行中 + 已完成）
+        orders = orders.filter(status__in=['assigned', 'in_progress', 'pending_confirm', 'completed', 'evaluated'])
 
     paginator = PageNumberPagination()
     paginator.page_size = 10

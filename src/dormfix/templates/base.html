@@ -142,21 +142,21 @@
 
     <!-- 全局 Layout 脚本 -->
     <script>
-        // 安全读取 sessionStorage 用户数据
+        // 安全读取 localStorage 用户数据（支持多标签页共享）
         function getStoredUser() {
             try {
-                const json = sessionStorage.getItem('dormfix_user');
+                const json = localStorage.getItem('dormfix_user');
                 if (!json) return null;
                 return JSON.parse(json);
             } catch (e) {
-                sessionStorage.removeItem('dormfix_user');
-                sessionStorage.removeItem('dormfix_token');
+                localStorage.removeItem('dormfix_user');
+                localStorage.removeItem('dormfix_token');
                 return null;
             }
         }
 
         // 1. 验证用户是否登录，未登录则拦截至登录页
-        const token = sessionStorage.getItem('dormfix_token');
+        const token = localStorage.getItem('dormfix_token');
         const currentUser = getStoredUser();
 
         if (!token || !currentUser) {
@@ -214,8 +214,8 @@
                     } catch (e) {
                         console.error('Logout error, forcing clear local data.', e);
                     } finally {
-                        sessionStorage.removeItem('dormfix_token');
-                        sessionStorage.removeItem('dormfix_user');
+                        localStorage.removeItem('dormfix_token');
+                        localStorage.removeItem('dormfix_user');
                         hideLoader();
                         window.location.href = '/login/';
                     }

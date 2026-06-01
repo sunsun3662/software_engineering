@@ -1,6 +1,9 @@
 const API_BASE_URL = '/api';
 const API_TIMEOUT = 15000; // 15秒超时
 
+// 统一使用 localStorage，支持多标签页共享登录状态
+const storage = localStorage;
+
 const api = {
     /**
      * 发送网络请求的通用封装方法
@@ -8,7 +11,7 @@ const api = {
      * @param {object} options - Fetch 的配置参数
      */
     async request(url, options = {}) {
-        const token = sessionStorage.getItem('dormfix_token');
+        const token = storage.getItem('dormfix_token');
         const headers = options.headers || {};
 
         // 1. 自动携带 Token 认证信息
@@ -34,8 +37,8 @@ const api = {
 
             // 4. 拦截 401 状态（认证过期或无效），强制重定向回登录页面
             if (response.status === 401) {
-                sessionStorage.removeItem('dormfix_token');
-                sessionStorage.removeItem('dormfix_user');
+                storage.removeItem('dormfix_token');
+                storage.removeItem('dormfix_user');
                 // 仅在非登录页面时执行跳转，防止死循环
                 if (!window.location.pathname.endsWith('/login/')) {
                     window.location.href = '/login/';
@@ -75,14 +78,14 @@ const api = {
             throw error;
         }
     },
-    
+
     /**
      * 发送 GET 请求
      */
     get(url, options = {}) {
         return this.request(url, { ...options, method: 'GET' });
     },
-    
+
     /**
      * 发送 POST 请求
      */
@@ -90,7 +93,7 @@ const api = {
         const body = data instanceof FormData ? data : JSON.stringify(data);
         return this.request(url, { ...options, method: 'POST', body });
     },
-    
+
     /**
      * 发送 PUT 请求
      */

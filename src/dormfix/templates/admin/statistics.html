@@ -137,6 +137,7 @@
                             <th class="text-center">完工量</th>
                             <th class="text-center">均工时</th>
                             <th class="text-center">均评分</th>
+                            <th class="text-center">投诉量</th>
                         </tr>
                     </thead>
                     <tbody id="performanceTableBody">
@@ -401,18 +402,27 @@
     function renderPerformanceTable(perfData) {
         const tbody = document.getElementById('performanceTableBody');
         if (!perfData || perfData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">暂无师傅绩效数据</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">暂无师傅绩效数据</td></tr>`;
             return;
         }
 
         let html = '';
         perfData.forEach(p => {
+            // 投诉量显示样式：0显示绿色，1-2显示黄色，3+显示红色
+            let complaintClass = 'bg-success-subtle text-success';
+            if (p.complaint_count >= 3) {
+                complaintClass = 'bg-danger-subtle text-danger';
+            } else if (p.complaint_count >= 1) {
+                complaintClass = 'bg-warning-subtle text-warning';
+            }
+
             html += `
                 <tr>
                     <td class="fw-bold text-dark">${p.maintainer}</td>
                     <td class="text-center"><span class="badge bg-light text-dark">${p.completed_count} 单</span></td>
                     <td class="text-center text-secondary">${p.avg_hours.toFixed(1)}h</td>
                     <td class="text-center text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>${p.avg_score.toFixed(1)}</td>
+                    <td class="text-center"><span class="badge ${complaintClass}">${p.complaint_count} 次</span></td>
                 </tr>
             `;
         });

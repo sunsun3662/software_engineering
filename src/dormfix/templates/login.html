@@ -64,9 +64,10 @@
                         <span class="input-group-text bg-transparent border-end-0 border-secondary-subtle">
                             <i class="bi bi-person text-muted"></i>
                         </span>
-                        <input type="text" class="form-control border-start-0 ps-0" id="account" placeholder="学号 / 工号 / 账号" required>
-                        <div class="invalid-feedback">请输入您的账号</div>
+                        <input type="text" class="form-control border-start-0 ps-0" id="account" placeholder="账号 / 学号 / 工号" required>
+                        <div class="invalid-feedback">请输入账号、学号或工号</div>
                     </div>
+                    <small class="text-muted">支持使用账号、学号或工号登录</small>
                 </div>
 
                 <div class="mb-4">
@@ -96,9 +97,9 @@
     <script src="/static/js/api.js"></script>
     
     <script>
-        // 如果 sessionStorage 中已有 token，直接跳过登录验证重定向
-        const currentToken = sessionStorage.getItem('dormfix_token');
-        const currentUserJson = sessionStorage.getItem('dormfix_user');
+        // 如果 localStorage 中已有 token，直接跳过登录验证重定向
+        const currentToken = localStorage.getItem('dormfix_token');
+        const currentUserJson = localStorage.getItem('dormfix_user');
         if (currentToken && currentUserJson) {
             const user = JSON.parse(currentUserJson);
             redirectUser(user.role);
@@ -121,7 +122,7 @@
 
         loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             // 清理状态
             errorAlert.classList.add('d-none');
             loginForm.classList.remove('was-validated');
@@ -145,9 +146,9 @@
                     password: password
                 });
 
-                // 登录成功存入本地缓存
-                sessionStorage.setItem('dormfix_token', data.token);
-                sessionStorage.setItem('dormfix_user', JSON.stringify(data.user));
+                // 登录成功存入本地缓存（使用 localStorage 支持多标签页共享）
+                localStorage.setItem('dormfix_token', data.token);
+                localStorage.setItem('dormfix_user', JSON.stringify(data.user));
 
                 // 角色页面重定向
                 redirectUser(data.user.role);
@@ -156,7 +157,7 @@
                 // 捕获 API 返回的错误（字段级校验或自定义 error 信息）
                 errorAlert.classList.remove('d-none');
                 loginForm.classList.add('was-validated');
-                
+
                 if (error && error.error) {
                     errorMessage.textContent = error.error;
                 } else if (error && error.detail) {

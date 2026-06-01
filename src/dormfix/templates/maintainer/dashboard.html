@@ -91,8 +91,8 @@
                                 <th>报修类别</th>
                                 <th>报修人</th>
                                 <th>完工时间</th>
+                                <th>状态</th>
                                 <th>评分</th>
-                                <th>操作</th>
                             </tr>
                         </thead>
                         <tbody id="historyTableBody">
@@ -323,13 +323,13 @@
         tbody.innerHTML = `<tr><td colspan="7" class="text-center py-3"><div class="spinner-border text-primary spinner-border-sm" role="status"></div> 载入数据中...</td></tr>`;
 
         try {
-            // 调用 API 4.1：获取历史工单，可以通过筛选完成和评价状态
-            const data = await api.get('/maintenance/tasks/'); 
-            // 筛选出 completed 和 evaluated 的工单作为历史记录
+            // 调用 API 4.1：获取历史工单
+            const data = await api.get('/maintenance/tasks/');
+            // 筛选出已完成的工单（包括待确认、已确认、已评价）
             const historyList = data.results.filter(t => t.status === 'completed' || t.status === 'evaluated' || t.status === 'pending_confirm');
-            
-            // 累计完工计数
-            document.getElementById('completedTasksCount').textContent = historyList.filter(t => t.status !== 'pending_confirm').length;
+
+            // 累计完工计数（包含待确认的，因为维修工作已完成）
+            document.getElementById('completedTasksCount').textContent = historyList.length;
 
             renderHistoryTable(historyList, tbody);
         } catch (e) {
@@ -371,19 +371,19 @@
         tasks.forEach(t => {
             const statusClass = statusBadges[t.status] || 'bg-light text-dark';
             const statusText = statusLabels[t.status] || t.status_display || t.status;
-            
-            // 处理评价打分信息 (如果有)
+
+            // 处理评价打分信息
             let scoreText = '<span class="text-muted small">暂无</span>';
-            
-            // 假设后端在 evaluator 关联中返回评分，或者我们可以通过拉取详情看
-            // 在您的 API 2.3 详情中有 evaluation_id，通常后端在列表里也会把均分带上。
-            // 这里我们模拟展现，如果有评分就展示星星
-            if (t.status === 'evaluated') {
-                // 暂时写个默认的，如果包含具体评分可以渲染真实评分，这里我们均值从后端 profile 或统计获取
-                scoreText = `<span class="text-warning"><i class="bi bi-star-fill me-1"></i>5.0</span>`;
-                totalRating += 5;
+
+            // 如果已评价且有评分数据，显示真实评分
+            if (t.status === 'evaluated' && t.avg_score) {
+                scoreText = `<span class="text-warning"><i class="bi bi-star-fill me-1"></i>${t.avg_score}</span>`;
+                totalRating += t.avg_score;
                 ratedCount++;
             }
+
+            // 完工时间：优先使用 finish_time，如果没有则显示 --
+            const finishTime = t.finish_time ? new Date(t.finish_time).toLocaleString() : '--';
 
             html += `
                 <tr>
@@ -394,7 +394,7 @@
                     </td>
                     <td><span class="badge bg-light text-secondary rounded px-2.5 py-1">${categoryLabels[t.category] || t.category_display}</span></td>
                     <td>${t.student.name}</td>
-                    <td class="text-muted small">${t.assign_time ? new Date(t.assign_time).toLocaleDateString() : '--'}</td>
+                    <td class="text-muted small">${finishTime}</td>
                     <td><span class="badge ${statusClass} px-2 py-1">${statusText}</span></td>
                     <td>${scoreText}</td>
                 </tr>
