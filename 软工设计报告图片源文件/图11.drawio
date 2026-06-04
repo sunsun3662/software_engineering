@@ -1,0 +1,106 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="第 1 页" id="pRfk_yj-ZTL7_LIdLtva">
+    <mxGraphModel dx="1492" dy="604" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2339" pageHeight="3300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="A5Ja5palQMTIlaedMPUS-11" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlActor;size=50;fontStyle=1;fontSize=20;fillColor=#d5e8d4;strokeColor=#82b366;" value="学生" vertex="1">
+          <mxGeometry height="690" width="100" x="460" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-12" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" value="登陆界面" vertex="1">
+          <mxGeometry height="690" width="100" x="689" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-23" parent="A5Ja5palQMTIlaedMPUS-12" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" value="" vertex="1">
+          <mxGeometry height="80" width="10" x="45" y="106" as="geometry" />
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-13" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" value="提交报修" vertex="1">
+          <mxGeometry height="690" width="100" x="886" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-26" parent="A5Ja5palQMTIlaedMPUS-13" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fontSize=20;fontStyle=1;fillColor=#fad7ac;strokeColor=#b46504;" value="" vertex="1">
+          <mxGeometry height="80" width="10" x="45" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-14" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" value="选择宿舍" vertex="1">
+          <mxGeometry height="680" width="100" x="1116" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-32" parent="A5Ja5palQMTIlaedMPUS-14" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" value="" vertex="1">
+          <mxGeometry height="80" width="10" x="45" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-15" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" value="填写报修信息" vertex="1">
+          <mxGeometry height="680" width="125" x="1347" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-36" parent="A5Ja5palQMTIlaedMPUS-15" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" value="" vertex="1">
+          <mxGeometry height="80" width="10" x="57.5" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-16" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" value="学生信息" vertex="1">
+          <mxGeometry height="660" width="100" x="1780" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-20" parent="A5Ja5palQMTIlaedMPUS-16" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" value="" vertex="1">
+          <mxGeometry height="80" width="10" x="45" y="106" as="geometry" />
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-24" edge="1" parent="1" style="html=1;verticalAlign=bottom;startArrow=oval;endArrow=block;startSize=8;curved=0;rounded=0;entryX=0;entryY=0;entryDx=0;entryDy=5;fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" target="A5Ja5palQMTIlaedMPUS-23" value="1.输入账号密码">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="509.07142857142867" y="741" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-21" edge="1" parent="1" source="A5Ja5palQMTIlaedMPUS-23" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;entryX=0;entryY=0;entryDx=0;entryDy=5;fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" target="A5Ja5palQMTIlaedMPUS-20" value="2.校验账号信息">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1610" y="741" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-22" edge="1" parent="1" source="A5Ja5palQMTIlaedMPUS-20" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;exitX=0;exitY=1;exitDx=0;exitDy=-5;fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" value="3.验证通过">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="759.0714285714284" y="811" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-25" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" value="4.成功登陆">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="760" y="816" as="sourcePoint" />
+            <mxPoint x="509.07142857142867" y="816" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-27" edge="1" parent="1" source="A5Ja5palQMTIlaedMPUS-11" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;entryX=0;entryY=0;entryDx=0;entryDy=5;fontSize=20;fontStyle=1;fillColor=#fad7ac;strokeColor=#b46504;" target="A5Ja5palQMTIlaedMPUS-26" value="5.进入提交报修界面">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="935" y="895" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-28" edge="1" parent="1" source="A5Ja5palQMTIlaedMPUS-26" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;exitX=0;exitY=1;exitDx=0;exitDy=-5;fontSize=20;fontStyle=1;fillColor=#fad7ac;strokeColor=#b46504;" target="A5Ja5palQMTIlaedMPUS-11" value="6.输入报修信息">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="935" y="965" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-33" edge="1" parent="1" source="A5Ja5palQMTIlaedMPUS-11" style="html=1;verticalAlign=bottom;startArrow=oval;endArrow=block;startSize=8;curved=0;rounded=0;entryX=0;entryY=0;entryDx=0;entryDy=5;fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" target="A5Ja5palQMTIlaedMPUS-32" value="7.选择宿舍">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1160" y="1025" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-37" edge="1" parent="1" source="A5Ja5palQMTIlaedMPUS-32" style="html=1;verticalAlign=bottom;startArrow=oval;endArrow=block;startSize=8;curved=0;rounded=0;entryX=0;entryY=0;entryDx=0;entryDy=5;fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" target="A5Ja5palQMTIlaedMPUS-36" value="8.填写报修信息">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1390" y="1085" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-38" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" target="A5Ja5palQMTIlaedMPUS-11" value="9.报修信息验证正确">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1404" y="1140" as="sourcePoint" />
+            <mxPoint x="1390" y="1140" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-39" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" value="工单创建" vertex="1">
+          <mxGeometry height="680" width="100" x="1580" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-42" parent="A5Ja5palQMTIlaedMPUS-39" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" value="" vertex="1">
+          <mxGeometry height="80" width="10" x="45" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-43" edge="1" parent="1" source="A5Ja5palQMTIlaedMPUS-11" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;entryX=0;entryY=0;entryDx=0;entryDy=5;fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" target="A5Ja5palQMTIlaedMPUS-42" value="10.生成报修工单">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1595" y="1195" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A5Ja5palQMTIlaedMPUS-44" edge="1" parent="1" source="A5Ja5palQMTIlaedMPUS-42" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;exitX=0;exitY=1;exitDx=0;exitDy=-5;fontStyle=1;fontSize=20;fillColor=#fad7ac;strokeColor=#b46504;" target="A5Ja5palQMTIlaedMPUS-11" value="11.成功提交报修申请">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1595" y="1265" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

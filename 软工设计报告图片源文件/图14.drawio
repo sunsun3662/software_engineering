@@ -1,0 +1,69 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="第 1 页" id="sWDlt_sBH-XvkgvSuIO-">
+    <mxGraphModel dx="710" dy="288" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2339" pageHeight="3300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="DO7xobSU8L95Lc8DnBFj-5" parent="1" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;darkOpacity=0.05;darkOpacity2=0.1;fontStyle=1;fontSize=16;fillColor=#e1d5e7;strokeColor=#9673a6;" value="服务器&lt;div&gt;&lt;font style=&quot;color: rgb(0, 153, 0);&quot;&gt;Nginx&lt;/font&gt;&lt;br&gt;&lt;div&gt;&lt;span data-spm-anchor-id=&quot;5176.28103460.0.i33.6fd57d83wLO8g0&quot; style=&quot;box-sizing: border-box; --tw-border-spacing-x: 0; --tw-border-spacing-y: 0; --tw-translate-x: 0; --tw-translate-y: 0; --tw-rotate: 0; --tw-skew-x: 0; --tw-skew-y: 0; --tw-scale-x: 1; --tw-scale-y: 1; --tw-pan-x: ; --tw-pan-y: ; --tw-pinch-zoom: ; --tw-scroll-snap-strictness: proximity; --tw-gradient-from-position: ; --tw-gradient-via-position: ; --tw-gradient-to-position: ; --tw-ordinal: ; --tw-slashed-zero: ; --tw-numeric-figure: ; --tw-numeric-spacing: ; --tw-numeric-fraction: ; --tw-ring-inset: ; --tw-ring-offset-width: 0px; --tw-ring-offset-color: light-dark(#fff, #000000); --tw-ring-color: light-dark(rgba(59,130,246,0.5), #4c89ec80); --tw-ring-offset-shadow: 0 0 transparent; --tw-ring-shadow: 0 0 transparent; --tw-shadow: 0 0 transparent; --tw-shadow-colored: 0 0 transparent; --tw-blur: ; --tw-brightness: ; --tw-contrast: ; --tw-grayscale: ; --tw-hue-rotate: ; --tw-invert: ; --tw-saturate: ; --tw-sepia: ; --tw-drop-shadow: ; --tw-backdrop-blur: ; --tw-backdrop-brightness: ; --tw-backdrop-contrast: ; --tw-backdrop-grayscale: ; --tw-backdrop-hue-rotate: ; --tw-backdrop-invert: ; --tw-backdrop-opacity: ; --tw-backdrop-saturate: ; --tw-backdrop-sepia: ; --tw-contain-size: ; --tw-contain-layout: ; --tw-contain-paint: ; --tw-contain-style: ; border: 0px solid; -webkit-font-smoothing: antialiased; color: rgb(17, 17, 51); font-family: -apple-system, blinkmacsystemfont, &amp;quot;Helvetica Neue&amp;quot;, helvetica, &amp;quot;segoe ui&amp;quot;, arial, roboto, &amp;quot;PingFang SC&amp;quot;, miui, &amp;quot;Hiragino Sans GB&amp;quot;, &amp;quot;Microsoft Yahei&amp;quot;, sans-serif, &amp;quot;Source Han Serif&amp;quot;; letter-spacing: 0.064px; text-align: start; white-space-collapse: preserve; background-color: rgb(255, 255, 255);&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="120" x="440" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="DO7xobSU8L95Lc8DnBFj-6" parent="1" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;darkOpacity=0.05;darkOpacity2=0.1;fontStyle=1;fontSize=16;fillColor=#fff2cc;strokeColor=#d6b656;" value="学生端" vertex="1">
+          <mxGeometry height="80" width="120" x="201" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="DO7xobSU8L95Lc8DnBFj-7" parent="1" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;darkOpacity=0.05;darkOpacity2=0.1;fontStyle=1;fontSize=16;fillColor=#fff2cc;strokeColor=#d6b656;" value="管理员端" vertex="1">
+          <mxGeometry height="80" width="120" x="201" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="DO7xobSU8L95Lc8DnBFj-8" parent="1" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;darkOpacity=0.05;darkOpacity2=0.1;fontStyle=1;fontSize=16;fillColor=#fff2cc;strokeColor=#d6b656;" value="维修人员端" vertex="1">
+          <mxGeometry height="80" width="120" x="201" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="DO7xobSU8L95Lc8DnBFj-10" edge="1" parent="1" source="DO7xobSU8L95Lc8DnBFj-7" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=0.993;exitY=0.525;exitDx=0;exitDy=0;exitPerimeter=0;fontStyle=1;fontSize=16;" target="DO7xobSU8L95Lc8DnBFj-5" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="310" y="290" as="sourcePoint" />
+            <mxPoint x="390" y="290" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="DO7xobSU8L95Lc8DnBFj-16" connectable="0" parent="DO7xobSU8L95Lc8DnBFj-10" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontStyle=1;fontSize=16;" value="HTTP" vertex="1">
+          <mxGeometry relative="1" x="-0.003" y="-2" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="DO7xobSU8L95Lc8DnBFj-11" edge="1" parent="1" source="DO7xobSU8L95Lc8DnBFj-6" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=0;exitY=0;exitDx=120;exitDy=50;exitPerimeter=0;entryX=0;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=1;fontSize=16;" target="DO7xobSU8L95Lc8DnBFj-5" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="390" y="250" as="sourcePoint" />
+            <mxPoint x="440" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="DO7xobSU8L95Lc8DnBFj-15" connectable="0" parent="DO7xobSU8L95Lc8DnBFj-11" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontStyle=1;fontSize=16;" value="HTTP" vertex="1">
+          <mxGeometry relative="1" x="0.0294" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="DO7xobSU8L95Lc8DnBFj-12" edge="1" parent="1" source="DO7xobSU8L95Lc8DnBFj-8" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=0;exitY=0;exitDx=120;exitDy=20;exitPerimeter=0;entryX=0;entryY=0;entryDx=20;entryDy=80;entryPerimeter=0;fontStyle=1;fontSize=16;" target="DO7xobSU8L95Lc8DnBFj-5" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="340" y="410" as="sourcePoint" />
+            <mxPoint x="390" y="360" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="DO7xobSU8L95Lc8DnBFj-17" connectable="0" parent="DO7xobSU8L95Lc8DnBFj-12" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontStyle=1;fontSize=16;" value="HTTP" vertex="1">
+          <mxGeometry relative="1" x="-0.0942" y="4" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="DO7xobSU8L95Lc8DnBFj-18" parent="1" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;darkOpacity=0.05;darkOpacity2=0.1;align=center;fontStyle=1;fontSize=16;fillColor=#d5e8d4;strokeColor=#82b366;" value="数据库&lt;div&gt;&lt;font style=&quot;color: rgb(204, 102, 0);&quot;&gt;SQLite&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent;&quot;&gt;&lt;font style=&quot;color: rgb(204, 102, 0);&quot;&gt;MySQL&amp;nbsp;&lt;/font&gt;&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="129" x="651" y="244" as="geometry" />
+        </mxCell>
+        <mxCell id="DO7xobSU8L95Lc8DnBFj-19" edge="1" parent="1" source="DO7xobSU8L95Lc8DnBFj-5" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=0;exitY=0;exitDx=120;exitDy=50;exitPerimeter=0;entryX=-0.013;entryY=0.575;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=1;fontSize=16;" target="DO7xobSU8L95Lc8DnBFj-18" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="580" y="300" as="sourcePoint" />
+            <mxPoint x="630" y="250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="DO7xobSU8L95Lc8DnBFj-20" connectable="0" parent="DO7xobSU8L95Lc8DnBFj-19" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontStyle=1;fontSize=16;" value="ORM" vertex="1">
+          <mxGeometry relative="1" x="-0.0519" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
